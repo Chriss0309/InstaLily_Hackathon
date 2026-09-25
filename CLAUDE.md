@@ -61,6 +61,7 @@ forecasts 4,000 steps ahead with no feedback. Background, reasoning and per-syst
 | `schedules/` | `file:` plans: JSON `{KEY: [[steps, {control: value}], ...]}`, unset controls at recovery. |
 | `test_collect_runs.py` | Free check of the `file:` plan guards and the save path (fake client). |
 | `build_submission.py` | Copies `predict.py` + `models/<system>.json` into `submission/<system>/`, smoke-tests, zips. |
+| `score_zip.py` | Free: runs each folder of one or more uploaded ZIPs on every paid run, proxy score per log file. |
 | `check_setup.py` | Env/version check, 4,000-step self-test for all ten, free gateway reads into `docs/`. |
 | `gateway.py` | Credentials (env vars, then `secrets/*credentials*.json`); loads `kit/client.py` by file path. |
 | `kit/` | Organizer kit + rule docs. Untouched. Its `predict.py`/`fit.py` are a different model format. |
@@ -91,6 +92,7 @@ python collect_runs.py SYSTEM --dry-run PLAN      # free preview of an experimen
 python collect_runs.py SYSTEM PLAN [--steps N]    # COSTS STEPS, needs Chris's OK
 python fit.py research\SYSTEM.json --holdout 1
 python build_submission.py [SYSTEM ...]           # writes submission.zip
+python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare versions on paid runs
 ```
 
 ## Status at handoff (Sep 24, end of claude.ai session)
@@ -119,7 +121,9 @@ python build_submission.py [SYSTEM ...]           # writes submission.zip
   power_grid 800, supply_chain 1150, wildlife 1020, reservoir 1140, ad_auction 1060,
   social_contagion 1080, hospital_queue 760. Copies in `research/backup/`.
   Run `python check_setup.py` first; it shows steps left per system.
-- All ten models are untuned textbook guesses (see `docs/HANDOFF.md`). Nothing fitted to real data.
+- Upload E (Sep 25, `uploads/2026-09-25_E_all_ten.zip`) exists only on Chris's machine. This repo
+  still matches the D zip exactly (predict.py and all ten model.json). Push E and paste its scores
+  before comparing against Upload 1 and reverting anything that dropped.
 
 ## Next steps
 
@@ -129,6 +133,30 @@ python build_submission.py [SYSTEM ...]           # writes submission.zip
 3. Per system: ~200 steps of the standard plan (see handoff), fit, check residuals, upload.
 4. Prioritize by expected gain. Keep ~20% of each budget for validating final models.
 5. From Sep 28 12:00: Chris must upload finals explicitly in the Final tab.
+6. Round F (planned Sep 25, NOT run, needs Chris's OK): order and recovery-spacing tests,
+   `schedules/f1.json`, 5,015 steps, every system keeps >= 400. Per system three runs from reset:
+   `xy` = stress X then Y, `yx` = Y then X, `spacing` = the reference pulse repeated with a short
+   then a longer rest (market and hospital fit only two gaps' worth). Save to
+   `research/<system>_f1.json`. Before refitting, score the current models on these runs with
+   `score_zip.py`: they were fitted without them, so that is the honest order/spacing check.
+
+   | System | X vs Y (order runs) | Pulse x gaps | Steps | Left after |
+   |---|---|---|---|---|
+   | epidemic | vaccination vs school+mask (brief) | 3x40, rest 20 / 80 | 700 | 400 |
+   | market | interest rate vs tax | 2x30, rest 15 | 400 | 400 |
+   | traffic | loaded road, signal 0.15 vs 0.85 (brief: reversal) | 3x30, rest 15 / 45 | 435 | 825 |
+   | power_grid | price 0 vs reserve 150 + charging 0 + interconnector 0.2 | 3x30, rest 10 / 40 | 400 | 400 |
+   | supply_chain | orders 80, production 1.5 vs 0.5 (brief) | 3x30, rest 20 / 60 | 555 | 595 |
+   | wildlife | hunting 7 vs habitat 0.1 (brief) | 3x30, rest 15 / 60 | 565 | 455 |
+   | reservoir | release+irrigation vs deep withdrawal+no aeration | 3x40, rest 20 / 80 | 620 | 520 |
+   | ad_auction | breadth 0.775 vs bid 5 + budget 100 (brief) | 3x30, rest 10 / 40 | 440 | 620 |
+   | social_contagion | incentive 2 vs seeding 9 (brief) | 3x40, rest 10 / 40 | 540 | 540 |
+   | hospital_queue | staff 5+overtime+no follow-up vs electives+diag 0.75+urgent | 3x15, rest 15 / 45 | 360 | 400 |
+
+   ```powershell
+   python collect_runs.py SYSTEM --dry-run "file:schedules/f1.json#SYSTEM.xy"
+   foreach ($k in "xy","yx","spacing") { python collect_runs.py SYSTEM "file:schedules/f1.json#SYSTEM.$k" --out research\SYSTEM_f1.json }
+   ```
 
 ## Findings (append new ones here)
 
@@ -226,6 +254,19 @@ python build_submission.py [SYSTEM ...]           # writes submission.zip
   supply; the v1 model has no seasonality.
 - `.claude/settings.json` denies reading `secrets/` and asks before collect commands. That is a
   backstop only (Bash rules are prefix matches). Rules 1 and 2 above are what count.
+- D was fitted on first-look data only, so the Round C runs are a holdout for it. D does not carry
+  over from joint pulses to single controls. Proxy (std sigma), first-look vs Round C: supply_chain
+  0.97 -> 0.47, social_contagion 0.97 -> 0.68, hospital_queue 0.94 -> 0.78, power_grid 0.79 ->
+  0.70, epidemic / traffic / wildlife ~0.93 -> 0.81, ad_auction 0.94 -> 0.83, reservoir 0.91 ->
+  0.87, market 0.91 -> 0.89. Composition is weak and order/spacing are untested.
+- Upload 1's textbook code is not in the repo or `uploads/`. Only power_grid's textbook equations
+  survive (its `DEFAULTS`; D only changed its model.json). Reverting any other system to Upload 1
+  needs that zip from Chris's machine.
+- What D predicts for Round F: no order effect at all for supply_chain (production only moves
+  capped supplier stock) and none for reservoir quality (its memory term treats all controls
+  alike). If the data shows order effects there, those structures are wrong.
+- The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
+  intervention order, recovery spacing, joint intervention.
 
 
 ## More info please refer to the webpage: 

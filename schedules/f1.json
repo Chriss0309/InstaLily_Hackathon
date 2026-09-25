@@ -1,0 +1,41 @@
+{
+  "epidemic.xy": [[20, {}], [50, {"vaccination_rate": 0.003}], [50, {"school_closure": 1.0, "mask_mandate": 1.0}], [80, {}]],
+  "epidemic.yx": [[20, {}], [50, {"school_closure": 1.0, "mask_mandate": 1.0}], [50, {"vaccination_rate": 0.003}], [80, {}]],
+  "epidemic.spacing": [[20, {}], [40, {"school_closure": 1.0, "mask_mandate": 1.0, "vaccination_rate": 0.003}], [20, {}], [40, {"school_closure": 1.0, "mask_mandate": 1.0, "vaccination_rate": 0.003}], [80, {}], [40, {"school_closure": 1.0, "mask_mandate": 1.0, "vaccination_rate": 0.003}], [60, {}]],
+
+  "market.xy": [[20, {}], [40, {"interest_rate": 0.1}], [40, {"transaction_tax": 0.05}], [35, {}]],
+  "market.yx": [[20, {}], [40, {"transaction_tax": 0.05}], [40, {"interest_rate": 0.1}], [35, {}]],
+  "market.spacing": [[20, {}], [30, {"interest_rate": 0.1, "transaction_tax": 0.05}], [15, {}], [30, {"interest_rate": 0.1, "transaction_tax": 0.05}], [35, {}]],
+
+  "traffic.xy": [[10, {}], [30, {"ramp_metering": 1.0, "toll": 0.0, "lane_closure": 0.65, "clearance_effort": 0.0, "freight_priority": 1.0, "signal_timing": 0.15}], [30, {"ramp_metering": 1.0, "toll": 0.0, "lane_closure": 0.65, "clearance_effort": 0.0, "freight_priority": 1.0, "signal_timing": 0.85}], [45, {}]],
+  "traffic.yx": [[10, {}], [30, {"ramp_metering": 1.0, "toll": 0.0, "lane_closure": 0.65, "clearance_effort": 0.0, "freight_priority": 1.0, "signal_timing": 0.85}], [30, {"ramp_metering": 1.0, "toll": 0.0, "lane_closure": 0.65, "clearance_effort": 0.0, "freight_priority": 1.0, "signal_timing": 0.15}], [45, {}]],
+  "traffic.spacing": [[10, {}], [30, {"ramp_metering": 1.0, "toll": 0.0, "lane_closure": 0.65, "clearance_effort": 0.0, "freight_priority": 1.0, "signal_timing": 0.15}], [15, {}], [30, {"ramp_metering": 1.0, "toll": 0.0, "lane_closure": 0.65, "clearance_effort": 0.0, "freight_priority": 1.0, "signal_timing": 0.15}], [45, {}], [30, {"ramp_metering": 1.0, "toll": 0.0, "lane_closure": 0.65, "clearance_effort": 0.0, "freight_priority": 1.0, "signal_timing": 0.15}], [45, {}]],
+
+  "power_grid.xy": [[20, {}], [30, {"price_signal": 0.0}], [30, {"reserve_dispatch": 150.0, "charging_allowance": 0.0, "interconnector": 0.2}], [20, {}]],
+  "power_grid.yx": [[20, {}], [30, {"reserve_dispatch": 150.0, "charging_allowance": 0.0, "interconnector": 0.2}], [30, {"price_signal": 0.0}], [20, {}]],
+  "power_grid.spacing": [[20, {}], [30, {"price_signal": 0.0, "reserve_dispatch": 150.0, "charging_allowance": 0.0, "interconnector": 0.2}], [10, {}], [30, {"price_signal": 0.0, "reserve_dispatch": 150.0, "charging_allowance": 0.0, "interconnector": 0.2}], [40, {}], [30, {"price_signal": 0.0, "reserve_dispatch": 150.0, "charging_allowance": 0.0, "interconnector": 0.2}], [40, {}]],
+
+  "supply_chain.xy": [[10, {}], [40, {"order_quantity": 80.0, "lead_time_buy": 0.2, "product_mix": 0.8, "maintenance": 0.0, "production_effort": 1.5}], [40, {"order_quantity": 80.0, "lead_time_buy": 0.2, "product_mix": 0.8, "maintenance": 0.0, "production_effort": 0.5}], [65, {}]],
+  "supply_chain.yx": [[10, {}], [40, {"order_quantity": 80.0, "lead_time_buy": 0.2, "product_mix": 0.8, "maintenance": 0.0, "production_effort": 0.5}], [40, {"order_quantity": 80.0, "lead_time_buy": 0.2, "product_mix": 0.8, "maintenance": 0.0, "production_effort": 1.5}], [65, {}]],
+  "supply_chain.spacing": [[10, {}], [30, {"order_quantity": 80.0, "lead_time_buy": 0.2, "product_mix": 0.8, "maintenance": 0.0, "receiving_effort": 0.35, "production_effort": 1.5}], [20, {}], [30, {"order_quantity": 80.0, "lead_time_buy": 0.2, "product_mix": 0.8, "maintenance": 0.0, "receiving_effort": 0.35, "production_effort": 1.5}], [60, {}], [30, {"order_quantity": 80.0, "lead_time_buy": 0.2, "product_mix": 0.8, "maintenance": 0.0, "receiving_effort": 0.35, "production_effort": 1.5}], [65, {}]],
+
+  "wildlife.xy": [[20, {}], [40, {"hunting_quota": 7.0}], [40, {"habitat_protection": 0.1}], [60, {}]],
+  "wildlife.yx": [[20, {}], [40, {"habitat_protection": 0.1}], [40, {"hunting_quota": 7.0}], [60, {}]],
+  "wildlife.spacing": [[20, {}], [30, {"hunting_quota": 7.0, "habitat_protection": 0.1, "corridor_access": 1.0}], [15, {}], [30, {"hunting_quota": 7.0, "habitat_protection": 0.1, "corridor_access": 1.0}], [60, {}], [30, {"hunting_quota": 7.0, "habitat_protection": 0.1, "corridor_access": 1.0}], [60, {}]],
+
+  "reservoir.xy": [[20, {}], [40, {"release_rate": 12.0, "irrigation_allocation": 8.0}], [40, {"withdrawal_depth": 1.0, "aeration": 0.0}], [60, {}]],
+  "reservoir.yx": [[20, {}], [40, {"withdrawal_depth": 1.0, "aeration": 0.0}], [40, {"release_rate": 12.0, "irrigation_allocation": 8.0}], [60, {}]],
+  "reservoir.spacing": [[20, {}], [40, {"release_rate": 12.0, "irrigation_allocation": 8.0, "withdrawal_depth": 1.0, "aeration": 0.0}], [20, {}], [40, {"release_rate": 12.0, "irrigation_allocation": 8.0, "withdrawal_depth": 1.0, "aeration": 0.0}], [80, {}], [40, {"release_rate": 12.0, "irrigation_allocation": 8.0, "withdrawal_depth": 1.0, "aeration": 0.0}], [60, {}]],
+
+  "ad_auction.xy": [[20, {}], [30, {"targeting_breadth": 0.775}], [30, {"bid": 5.0, "budget_cap": 100.0}], [40, {}]],
+  "ad_auction.yx": [[20, {}], [30, {"bid": 5.0, "budget_cap": 100.0}], [30, {"targeting_breadth": 0.775}], [40, {}]],
+  "ad_auction.spacing": [[20, {}], [30, {"bid": 5.0, "budget_cap": 100.0, "targeting_breadth": 0.775}], [10, {}], [30, {"bid": 5.0, "budget_cap": 100.0, "targeting_breadth": 0.775}], [40, {}], [30, {"bid": 5.0, "budget_cap": 100.0, "targeting_breadth": 0.775}], [40, {}]],
+
+  "social_contagion.xy": [[20, {}], [40, {"incentive": 2.0}], [40, {"seeding": 9.0}], [50, {}]],
+  "social_contagion.yx": [[20, {}], [40, {"seeding": 9.0}], [40, {"incentive": 2.0}], [50, {}]],
+  "social_contagion.spacing": [[20, {}], [40, {"seeding": 9.0, "incentive": 2.0, "bridge_outreach": 0.6}], [10, {}], [40, {"seeding": 9.0, "incentive": 2.0, "bridge_outreach": 0.6}], [40, {}], [40, {"seeding": 9.0, "incentive": 2.0, "bridge_outreach": 0.6}], [50, {}]],
+
+  "hospital_queue.xy": [[20, {}], [25, {"staffing": 5.0, "overtime": 1.0, "followup_capacity": 0.0}], [25, {"elective_scheduling": 20.0, "diagnostic_allocation": 0.75, "urgent_priority": 1.0}], [30, {}]],
+  "hospital_queue.yx": [[20, {}], [25, {"elective_scheduling": 20.0, "diagnostic_allocation": 0.75, "urgent_priority": 1.0}], [25, {"staffing": 5.0, "overtime": 1.0, "followup_capacity": 0.0}], [30, {}]],
+  "hospital_queue.spacing": [[20, {}], [15, {"staffing": 5.0, "overtime": 1.0, "followup_capacity": 0.0, "elective_scheduling": 20.0, "diagnostic_allocation": 0.75, "urgent_priority": 1.0}], [15, {}], [15, {"staffing": 5.0, "overtime": 1.0, "followup_capacity": 0.0, "elective_scheduling": 20.0, "diagnostic_allocation": 0.75, "urgent_priority": 1.0}], [45, {}], [15, {"staffing": 5.0, "overtime": 1.0, "followup_capacity": 0.0, "elective_scheduling": 20.0, "diagnostic_allocation": 0.75, "urgent_priority": 1.0}], [35, {}]]
+}
