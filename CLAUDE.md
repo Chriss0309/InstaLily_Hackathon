@@ -121,9 +121,19 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   power_grid 800, supply_chain 1150, wildlife 1020, reservoir 1140, ad_auction 1060,
   social_contagion 1080, hospital_queue 760. Copies in `research/backup/`.
   Run `python check_setup.py` first; it shows steps left per system.
-- Upload E (Sep 25, `uploads/2026-09-25_E_all_ten.zip`) exists only on Chris's machine. This repo
-  still matches the D zip exactly (predict.py and all ten model.json). Push E and paste its scores
-  before comparing against Upload 1 and reverting anything that dropped.
+- Round E (Sep 25 Toronto, scratch `E/`, xhigh effort): every system refit on first look + round C
+  with structural fixes, chosen by leave-one-run-out and shipped only if it beat the round-D model
+  on unseen round-C data. All ten shipped. Round-D model on unseen C data -> E held-out: epidemic
+  0.81 -> 0.84, market 0.89 -> 0.91, traffic 0.81 -> 0.87, reservoir 0.87 -> 0.90, ad_auction
+  0.83 -> 0.91, wildlife 0.81 -> 0.86, hospital 0.78 -> 0.92 (D had overtime backwards),
+  supply_chain 0.47 -> 0.48 (the mid-action regime is still poorly predicted). power_grid now
+  simulates 960 thermostatic loads: 40 episodes take 20-42 s locally (limit 1,200 s). Zip saved as
+  `uploads/2026-09-25_E_all_ten.zip`.
+- Upload E (public, Sep 25 Toronto) scored: ad_auction 0.8780, epidemic 0.6870, hospital_queue
+  0.6981, market 0.6218, power_grid 0.7804, reservoir 0.8447, social_contagion 0.4971,
+  supply_chain 0.7938, traffic 0.8103, wildlife 0.6560 (mean 0.727, Upload 1 was 0.377). All ten
+  beat Upload 1, so nothing was reverted. Smallest gain: social_contagion (+0.05), now the weakest.
+  E was fitted on Round C, so Round C is no longer a holdout for it; Round F is.
 
 ## Next steps
 
@@ -133,7 +143,7 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
 3. Per system: ~200 steps of the standard plan (see handoff), fit, check residuals, upload.
 4. Prioritize by expected gain. Keep ~20% of each budget for validating final models.
 5. From Sep 28 12:00: Chris must upload finals explicitly in the Final tab.
-6. Round F (planned Sep 25, NOT run, needs Chris's OK): order and recovery-spacing tests,
+6. Round F (planned Sep 25, approved by Chris Sep 25, run it locally): order and recovery-spacing tests,
    `schedules/f1.json`, 5,015 steps, every system keeps >= 400. Per system three runs from reset:
    `xy` = stress X then Y, `yx` = Y then X, `spacing` = the reference pulse repeated with a short
    then a longer rest (market and hospital fit only two gaps' worth). Save to
@@ -262,9 +272,14 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
 - Upload 1's textbook code is not in the repo or `uploads/`. Only power_grid's textbook equations
   survive (its `DEFAULTS`; D only changed its model.json). Reverting any other system to Upload 1
   needs that zip from Chris's machine.
-- What D predicts for Round F: no order effect at all for supply_chain (production only moves
-  capped supplier stock) and none for reservoir quality (its memory term treats all controls
-  alike). If the data shows order effects there, those structures are wrong.
+- What the models predict for Round F: D had no order effect at all for supply_chain; E has a
+  small one (retail 0.3 sigma). Both D and E predict none for reservoir quality (the memory term
+  treats all controls alike). If the data shows one, that structure is wrong.
+- E on all paid runs (proxy, std sigma) is 0.89-0.95 for every system, yet public runs 0.50-0.88.
+  The biggest gap is social_contagion (proxy 0.93, public 0.50): the test episodes hit behavior
+  our runs never showed. That is what Round F is for.
+- This cloud session cannot collect: the network policy blocks gt-gateway-wavddee32q-uc.a.run.app
+  and no gateway credentials are set. Collection runs on Chris's machine.
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
   intervention order, recovery spacing, joint intervention.
 

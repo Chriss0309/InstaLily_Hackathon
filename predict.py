@@ -60,23 +60,32 @@ def _f(d, key, default=0.0):
 # ------------------------------------------------------------------ epidemic
 # SEIRS with a 2-stage latent period (cases lag actions by 2 steps), waning
 # immunity (the epidemic comes back in waves), a referral pipeline that starts
-# empty, and a hard bed cap with a waiting list (hospital pins at ~156).
-# Age groups ignored. Fitted on both research runs (scratchpad D/epidemic).
+# empty, and a hard bed cap with a waiting list (hospital pins at ~155).
+# Round C (single-control holds) added: waiting patients leave the list at rate wl
+# (plateau exactly at cap, drain on time); behavior: contacts fall as hospital fills
+# (1 / (1 + bh * H/cap)); referrals per case rise with school closure (hs, older age
+# mix) and with vaccination (hv, shared clinic workforce). Masks carry most of the
+# restriction effect, school closure little. Age groups otherwise ignored.
+# Fitted on all three research runs (scratchpad E/epidemic).
 DEFAULTS["epidemic"] = dict(
-    N=17421.053803070754,     # population
-    s0=0.9778848532734722,    # susceptible fraction at reset
-    rI=4.754999566339632,     # infectious per initial daily case
-    beta=0.3805778967893401,  # transmission per step at full contact
-    sigma=0.5599206789890795, # latent stage exit rate (2 stages)
-    gamma=0.16486579572727397, # recovery rate per step
-    omega=0.012901500007569764, # immunity waning rate per step
-    a_s=0.18883987840434188,  # contact reduction at full school closure
-    a_m=0.16468882532176157,  # exposure reduction at full mask mandate
-    v_eff=0.5792619490903622, # fraction of vaccination_rate*S immunized per step
-    h=0.04248979959389576,    # hospital referrals per onset
-    k_c=0.19679882448224792,  # referral pipeline rate per step
-    d=0.06868069865781783,    # hospital discharge rate per step
-    cap=158.20990081918694,   # hard bed cap
+    N=18646.41367192948,       # population
+    s0=1.0,                    # susceptible fraction cap at reset (not binding: S = N - E - I)
+    rI=5.050754028127234,      # infectious per initial daily case
+    beta=0.44806734996298114,  # transmission per step at full contact
+    sigma=0.40623995640848354, # latent stage exit rate (2 stages)
+    gamma=0.14472651613652904, # recovery rate per step
+    omega=0.009601018340951832, # immunity waning rate per step
+    a_s=0.036083109003154354,  # contact reduction at full school closure
+    a_m=0.38188557470949186,   # exposure reduction at full mask mandate
+    v_eff=0.6787575878795006,  # fraction of vaccination_rate*S immunized per step
+    h=0.05451534864245651,     # hospital referrals per onset
+    k_c=0.1376297200054615,    # referral pipeline rate per step
+    d=0.07619603943561191,     # hospital discharge rate per step
+    cap=155.18613733120998,    # hard bed cap
+    wl=0.03573089168068964,    # share of the bed waiting list that leaves per step
+    bh=0.31885890020465174,    # behavior: contact cut per unit hospital pressure H/cap
+    hs=0.06482224419159772,    # extra referrals per onset at full school closure (fraction)
+    hv=0.09257700840017434,    # extra referrals per onset at full vaccination (fraction)
 )
 
 
@@ -93,10 +102,12 @@ def start_epidemic(init, p):
 
 def adv_epidemic(s, a, p):
     N = max(p["N"], 1.0)
-    b = p["beta"] * (1 - p["a_s"] * _f(a, "school_closure")) * (1 - p["a_m"] * _f(a, "mask_mandate"))
+    sc = _f(a, "school_closure"); vr = _f(a, "vaccination_rate")
+    b = p["beta"] * (1 - p["a_s"] * sc) * (1 - p["a_m"] * _f(a, "mask_mandate")) \
+        / (1 + p["bh"] * s["H"] / p["cap"])
     S, E1, E2, I, R = s["S"], s["E1"], s["E2"], s["I"], s["R"]
     inf = min(b * S * I / N, S)
-    vax = min(p["v_eff"] * _f(a, "vaccination_rate") * S, S - inf)
+    vax = min(p["v_eff"] * vr * S, S - inf)
     on = p["sigma"] * E2      # new onsets = daily_cases
     mv = p["sigma"] * E1
     rec = p["gamma"] * I
@@ -106,12 +117,13 @@ def adv_epidemic(s, a, p):
     s["E2"] = E2 + mv - on
     s["I"] = I + on - rec
     s["R"] = R + rec + vax - wane
+    hh = p["h"] * (1 + p["hs"] * sc) * (1 + p["hv"] * vr / 0.003)
     ref = p["k_c"] * s["C"]   # referrals leave the clinical pipeline
-    s["C"] += p["h"] * on - ref
+    s["C"] += hh * on - ref
     s["W"] += ref             # and wait for a bed
     Hd = (1 - p["d"]) * s["H"]
     adm = min(s["W"], _pos(p["cap"] - Hd))
-    s["W"] -= adm
+    s["W"] = (s["W"] - adm) * (1 - p["wl"])
     s["H"] = Hd + adm
     return {"daily_cases": on, "hospital_load": s["H"]}
 
@@ -120,22 +132,25 @@ START["epidemic"], ADVANCE["epidemic"] = start_epidemic, adv_epidemic
 
 
 # ------------------------------------------------------------------ market
-# Refit textbook: price follows its target through a two-stage lag (lag, ramp, plateau),
-# volume and depth relax first-order. Calm levels are fitted constants, not the first reading.
-# a_tax_v and a_rate_v are tied (each gives half the joint-pulse volume effect): the data
-# only ever moved both controls together. Keep a_tax_v = 2 * a_rate_v when refitting.
+# Round E fit on all three research runs (first look + round C single-control run).
+# Price follows its target through a two-stage lag (lag, ramp, plateau), stage 1 is faster falling (k_p)
+# than recovering (k_pu): round C rate on t50 = 29 steps, rate off t50 = 70 steps.
+# Volume and depth relax first-order. Calm levels are fitted constants, not the first reading.
+# a_tax_v and a_rate_v stay tied (a_tax_v = 2 * a_rate_v); keep the tie when refitting.
 DEFAULTS["market"] = dict(
-    p0=94.19155717682646,     # calm price level (0 = take from initial)
-    v0=2.265499698920218,     # calm volume level (0 = take from initial)
-    d0=89.81421259466852,     # calm depth level (0 = take from initial)
-    a_rate_p=4.149757184759864,     # price target falls a_rate_p * interest_rate
-    a_tax_v=0.49142246420393343,    # volume target falls a_tax_v * tax
-    a_rate_v=0.24571123210196671,   # volume target falls a_rate_v * interest_rate
-    a_vol_d=-0.017663002652874894,  # depth target change per unit of volume above baseline
-    a_tax_d=11.221344173754414,     # depth target falls a_tax_d * tax
-    k_p=0.02347471604832667,        # price lag stage 1 (fraction of gap closed per step)
-    k_p2=0.030537635487408933,      # price lag stage 2
-    k_v=0.3097084357024772, k_d=0.10824352228498302,
+    p0=93.81467991644752,  # calm price level (0 = take from initial)
+    v0=1.886058677676455,  # calm volume level (0 = take from initial)
+    d0=90.63434257445736,  # calm depth level (0 = take from initial)
+    a_rate_p=3.1467327979958792,  # price target falls a_rate_p * interest_rate
+    a_tax_v=-1.0829051252047697,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
+    a_rate_v=-0.5414525626023848,  # volume target falls a_rate_v * interest_rate
+    a_vol_d=-0.012858346757379126,  # depth target change per unit of volume above baseline
+    a_tax_d=10.975679806459524,  # depth target falls a_tax_d * tax
+    k_p=0.04372360873249523,  # price lag stage 1, target below pf (falling)
+    k_pu=0.023888161002877387,  # price lag stage 1, target above pf (recovering)
+    k_p2=0.04137618323073983,  # price lag stage 2
+    k_v=0.305597708318972,  # volume relaxation rate
+    k_d=0.12230677632502787,  # depth relaxation rate
 )
 
 
@@ -155,7 +170,8 @@ def adv_market(s, a, p):
     tp = s["p0"] * (1 - p["a_rate_p"] * r)
     tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r)
     td = s["d0"] * _pos(1 - p["a_vol_d"] * (s["volume"] / s["v0"] - 1) - p["a_tax_d"] * tax)
-    s["pf"] += _clip(p["k_p"], 0, 1) * (tp - s["pf"])
+    k1 = p["k_pu"] if tp > s["pf"] else p["k_p"]
+    s["pf"] += _clip(k1, 0, 1) * (tp - s["pf"])
     s["price"] += _clip(p["k_p2"], 0, 1) * (s["pf"] - s["price"])
     s["volume"] += _clip(p["k_v"], 0, 1) * (tv - s["volume"])
     s["depth"] += _clip(p["k_d"], 0, 1) * (td - s["depth"])
@@ -166,44 +182,49 @@ START["market"], ADVANCE["market"] = start_market, adv_market
 
 
 # ------------------------------------------------------------------ traffic
-# Queue model fitted to research data (Sep 25). Per route r in (a, b):
+# Queue model, refitted on all research runs incl. round C (Sep 25). Per route r in (a, b):
 #   arrivals  = lam_r * ramp * (1 - ct * toll/5)   ramp = admitted demand; recovery (ramp 0) = empty road
-#   pipeline  arrivals reach the junction queue after D_r steps (11 / 16 measured)
+#   pipeline  arrivals reach the junction queue after D_r steps
 #   capacity  = C_r * share_r * (1 - l_r * lane)   share_a = signal_timing, share_b = 1 - signal_timing
 #   queue     Q_r <= qmax_r, flow_r = min(Q_r, capacity)
-#   speed     EMA toward (vfree_r - M_r) / (1 + N_r / qref_r), N_r = queue + pipeline, M_b = 0
-#   memory    M_a += g * N_a / (N_a + qref_a) * (Mmax - M_a), never decays (speed_a stays low after a pulse)
+#   speed     EMA toward (vfree_r - M_r) / (1 + (Q_r + F_r) / qref_r), M_b = 0
+#             F_r = vehicles in the pipeline as they were kd steps ago (round C: speeds move ~5 steps late)
+#   memory    M_a += g * Q_a / (Q_a + qref_a) * (Mmax - M_a), never decays. Only a standing queue on a
+#             feeds it: speed_a stays ~2.3 low after the pulse, but not after 120 steps of free-flowing mid traffic.
 # The initial flow reading is ignored: roads start empty.
 DEFAULTS["traffic"] = dict(
     D_a=11.0,
     D_b=16.0,
+    kd=5.0,
     ct=0.5,
-    lam_a=10.761537575035316,
-    lam_b=13.196740732446036,
-    C_a=36.021986324205,
-    C_b=26.16488827228393,
-    l_a=8.006221324097651e-14,
-    l_b=0.7030652840548853,
-    qmax_a=526.9070032096531,
-    qmax_b=142.38097597697734,
-    qref_a=82.58281497622234,
-    qref_b=118.11907626201868,
-    vfree_a=48.89039995981071,
-    vfree_b=48.76096955522898,
-    alpha=0.2063879841815445,
-    g=0.01750648103431229,
-    Mmax=2.7667276406306756,
+    lam_a=26.28574311063386,
+    lam_b=27.705894747007093,
+    C_a=38.292724019749464,
+    C_b=33.13338646725439,
+    l_a=7.297199579789583e-09,
+    l_b=0.9138174180679676,
+    qmax_a=442.43203037474916,
+    qmax_b=123.49544644002185,
+    qref_a=176.48953469147457,
+    qref_b=306.1687847839545,
+    vfree_a=49.03225604777348,
+    vfree_b=48.60161068384281,
+    alpha=0.20189943691122356,
+    g=0.06158071225790588,
+    Mmax=3.3192311035196593,
 )
 
 
 def start_traffic(init, p):
     s = {"M": 0.0}
+    kd = max(int(round(p["kd"])), 0)
     for r in ("a", "b"):
         v = _f(init, "speed_" + r, p["vfree_" + r])
         s["V" + r] = v if math.isfinite(v) else p["vfree_" + r]
         s["Q" + r] = 0.0
         s["P" + r] = [0.0] * max(int(round(p["D_" + r])), 1)
         s["F" + r] = 0.0   # vehicles in the pipeline
+        s["H" + r] = [0.0] * kd   # pipeline load, kd steps late
     return s
 
 
@@ -226,11 +247,19 @@ def adv_traffic(s, a, p):
         cap = p["C_" + r] * share[r] * _pos(1 - p["l_" + r] * lane)
         served = min(q, cap)
         s["Q" + r] = q - served
-        n = s["Q" + r] + _pos(s["F" + r])
+        f = _pos(s["F" + r])
+        hist = s["H" + r]
+        if hist:
+            hist.append(f)
+            f = hist.pop(0)
+        n = s["Q" + r] + f
         if r == "a":
-            s["M"] += p["g"] * n / (n + p["qref_a"]) * (p["Mmax"] - s["M"])
-        tgt = (p["vfree_" + r] - (s["M"] if r == "a" else 0.0)) / (1 + n / p["qref_" + r])
-        s["V" + r] += p["alpha"] * (tgt - s["V" + r])
+            m = s["Qa"]
+            s["M"] += p["g"] * m / (m + p["qref_a"]) * (p["Mmax"] - s["M"])
+            vf = p["vfree_a"] - s["M"]
+        else:
+            vf = p["vfree_b"]
+        s["V" + r] += p["alpha"] * (vf / (1 + n / p["qref_" + r]) - s["V" + r])
         out["flow_" + r] = served
         out["speed_" + r] = s["V" + r]
     return out
@@ -240,89 +269,160 @@ START["traffic"], ADVANCE["traffic"] = start_traffic, adv_traffic
 
 
 # ------------------------------------------------------------------ power grid
-# Textbook: price-responsive load with deferred-demand rebound, reserves with a
-# state of charge, governor droop on frequency, interconnector that heats with use.
+# Fitted to all three research runs (first look + round C), scratchpad E/power_grid.
+# Load = price-elastic base demand + a fixed population of thermostatic cooling
+# loads (2 classes, 480 each, spread thermal time constants). Each load cools while on,
+# warms while off, and switches the moment its temperature reaches the deadband
+# limit that price shifts (exact crossing inside the step, so loads with different
+# time constants drift apart and a synchronized rebound dies out instead of
+# locking to whole-step cycles). The reading is the share of the step each load
+# ran. Every reset starts from the same asynchronous population at price 0.8; the
+# initial load reading's offset from base decays at rate rho.
+# Frequency: supply - demand drives it, damping pulls it back. Conventional
+# generation G follows a governor (droop, response kg) around
+# g0 and is displaced by reserve. Reserve delivers min(request, q0) with ramp kq.
+# Charging allowance has no modeled effect (never moved alone in research; no
+# reserve depletion seen over 100 steps even at charging 0). Renewables
+# r0 + r1*interconnector, curtailed by delivered reserve (cq).
+# Share = renewables / (renewables + G + reserve).
+_PG_N = 480                 # cooling loads per class
+_PG_GOLD = 0.6180339887498949
+
 DEFAULTS["power_grid"] = dict(
-    L0=0.0,            # baseline load at price 0.8; 0 = take from initial
-    a_price=0.15,      # load target drops a_price per unit price above 0.8
-    k_load=0.10,       # load response speed
-    k_def=0.05,        # deferred demand builds while load is below baseline ...
-    k_rel=0.02,        # ... and leaks away ...
-    k_reb=0.5,         # ... and pushes the load target back up (rebound)
-    f0=0.0,            # nominal frequency; 0 = take from initial
-    k_freq=0.002,      # Hz per unit power imbalance per step
-    k_fdamp=0.10,      # frequency damping
-    droop=20.0,        # extra conventional generation per Hz below nominal
-    k_gov=0.05,        # governor response speed
-    soc_max=600.0,     # reserve energy capacity
-    charge_rate=10.0,  # refill per step at full charging allowance
-    r_local=0.0,       # local renewable as fraction of L0; 0 = from initial share
-    r_remote=0.0,      # remote renewable via interconnector as fraction of L0
-    ic_heat=0.02, ic_cool=0.05, ic_derate=0.5,   # interconnector thermal limit
+    s0=0.5942231497307183,    # thermostat band centre at price 0.8 (normalized temperature)
+    db=0.1461719451654106,    # thermostat deadband width
+    kap=0.06077917097107874,  # band shift per unit price above 0.8
+    tau0=104.21868686039369,  # thermal time constant, class 0 (steps)
+    tau1=81.43321232025225,   # thermal time constant, class 1 (steps)
+    h=0.3871541479382904,     # +/- spread of time constants within a class
+    W0=63.11771398715735,     # total power of class 0 cooling loads
+    W1=24.463065643241904,    # total power of class 1 cooling loads
+    B0=108.00856678810136,    # base load at price 0.8
+    e=0.1161950882666221,     # base-load drop per unit price above 0.8 (fraction)
+    rho=0.8161574306145789,   # per-step decay of the initial load reading's offset
+    kf=0.010831787230847283,  # Hz per unit power imbalance per step
+    df=0.21977813679052322,   # frequency damping per step
+    g0=66.42739154839518,     # conventional generation setpoint
+    droop=11.90888852049393,  # conventional power per Hz below 50
+    kg=0.18205496777007926,   # governor response per step
+    disp=0.5090986285343971,  # conventional displaced per unit reserve
+    r0=13.369593164414749,    # local renewables
+    r1=23.185024789034003,    # remote renewables at interconnector 1
+    cq=0.00597333061367036,   # renewable curtailment per unit reserve
+    q0=117.20437539180821,    # reserve power cap
+    kq=0.7265069035629227,    # reserve ramp per step
 )
 
 
 def start_power_grid(init, p):
-    load = _f(init, "load", 100.0)
-    L0 = p["L0"] if p["L0"] > 0 else max(load, 1e-6)
-    f0 = p["f0"] if p["f0"] > 0 else _f(init, "frequency", 50.0)
-    share0 = _clip(_f(init, "renewable_share"), 0, 1)
-    r_local = p["r_local"] if p["r_local"] > 0 else share0
-    gen0 = _pos(L0 * (1 - r_local))
-    return dict(L=load, L0=L0, f0=f0, df=_f(init, "frequency", f0) - f0, D=0.0,
-                gen=gen0, gen0=gen0, soc=p["soc_max"], temp=0.0,
-                R_local=r_local * L0, R_remote=p["r_remote"] * L0)
+    lo0 = min(max(p["s0"] - p["db"] / 2, 1e-3), 0.999)
+    hi0 = min(max(p["s0"] + p["db"] / 2, lo0 + 1e-4), 0.9995)
+    aa, tau, th, on, w = [], [], [], [], []
+    for c in range(2):
+        tc, wc = p["tau%d" % c], p["W%d" % c] / _PG_N
+        for n in range(_PG_N):
+            tk = tc * (1 + p["h"] * ((n + 0.5) / _PG_N * 2 - 1))
+            ph = ((n + 0.5) * _PG_GOLD + 0.123 * c) % 1.0
+            t_on = tk * math.log(hi0 / lo0)
+            t_off = tk * math.log((1 - lo0) / (1 - hi0))
+            tt = ph * (t_on + t_off)
+            o = tt < t_on
+            aa.append(math.exp(-1.0 / tk))
+            tau.append(tk)
+            th.append(hi0 * math.exp(-tt / tk) if o else 1 - (1 - lo0) * math.exp(-(tt - t_on) / tk))
+            on.append(o)
+            w.append(wc)
+    base = 0.0
+    for k in range(len(on)):
+        if on[k]:
+            base += w[k]
+    return dict(a=aa, tau=tau, th=th, on=on, w=w, base=base, e0=_f(init, "load", p["B0"]) - p["B0"],
+                x=_f(init, "frequency", 50.0) - 50.0, G=p["g0"], Q=0.0)
 
 
 def adv_power_grid(s, a, p):
-    price = _f(a, "price_signal", 0.8)
-    res = _pos(_f(a, "reserve_dispatch"))
-    ch = _clip(_f(a, "charging_allowance"), 0, 1)
-    ic = _clip(_f(a, "interconnector"), 0, 1)
-    L0 = s["L0"]
-    L_target = L0 * (1 - p["a_price"] * (price - 0.8)) + p["k_reb"] * s["D"]
-    s["L"] += _clip(p["k_load"], 0, 1) * (L_target - s["L"])
-    s["D"] = _pos(s["D"] + p["k_def"] * (L0 - s["L"]) - p["k_rel"] * s["D"])
-    out = min(res, s["soc"])
-    s["soc"] -= out
-    charge = ch * p["charge_rate"] * _pos(1 - s["soc"] / max(p["soc_max"], 1e-6))
-    s["soc"] += charge
-    remote = s["R_remote"] * ic * _pos(1 - p["ic_derate"] * s["temp"])
-    s["temp"] = _clip(s["temp"] + p["ic_heat"] * ic - p["ic_cool"] * s["temp"], 0, 1)
-    gen_target = _pos(s["gen0"] - p["droop"] * s["df"])
-    s["gen"] += _clip(p["k_gov"], 0, 1) * (gen_target - s["gen"])
-    supply = s["gen"] + out + s["R_local"] + remote
-    demand = s["L"] + charge
-    s["df"] += p["k_freq"] * (supply - demand) - _clip(p["k_fdamp"], 0, 1) * s["df"]
-    share = (s["R_local"] + remote) / max(supply, 1e-6)
-    return {"load": demand, "frequency": s["f0"] + s["df"], "renewable_share": _clip(share, 0, 1)}
+    price = _clip(_f(a, "price_signal", 0.8), 0.0, 2.0)
+    res = _clip(_f(a, "reserve_dispatch"), 0.0, 150.0)
+    ic = _clip(_f(a, "interconnector"), 0.0, 1.0)
+    # thermostatic loads: exact threshold crossing inside the step
+    sp = p["s0"] + p["kap"] * (price - 0.8)
+    lo, hi = sp - p["db"] / 2, sp + p["db"] / 2
+    aa, tau, th, on, w = s["a"], s["tau"], s["th"], s["on"], s["w"]
+    tot = 0.0
+    for k in range(len(aa)):
+        x = th[k]
+        o = on[k]
+        if o and x <= lo:
+            o = False
+        elif not o and x >= hi:
+            o = True
+        if o:
+            y = x * aa[k]
+            if y > lo:
+                th[k] = y
+                tot += w[k]
+            else:
+                t1 = tau[k] * math.log(x / lo)
+                th[k] = 1 - (1 - lo) * math.exp(-(1 - t1) / tau[k])
+                o = False
+                tot += w[k] * t1
+        else:
+            y = 1 - (1 - x) * aa[k]
+            if y < hi:
+                th[k] = y
+            else:
+                t1 = tau[k] * math.log((1 - x) / (1 - hi))
+                th[k] = hi * math.exp(-(1 - t1) / tau[k])
+                o = True
+                tot += w[k] * (1 - t1)
+        on[k] = o
+    s["e0"] *= p["rho"]
+    load = p["B0"] * (1 - p["e"] * (price - 0.8)) + tot - s["base"] + s["e0"]
+    # reserve, renewables, conventional, frequency
+    s["Q"] += p["kq"] * (min(res, _pos(p["q0"])) - s["Q"])
+    ren = (p["r0"] + p["r1"] * ic) * _pos(1.0 - p["cq"] * s["Q"])
+    gt = _pos(p["g0"] - p["disp"] * s["Q"] - p["droop"] * s["x"])
+    s["G"] += p["kg"] * (gt - s["G"])
+    sup = ren + s["G"] + s["Q"]
+    s["x"] += p["kf"] * (sup - load) - p["df"] * s["x"]
+    share = ren / sup if sup > 1e-6 else 0.0
+    return {"load": load, "frequency": 50.0 + s["x"], "renewable_share": _clip(share, 0.0, 1.0)}
 
 
 START["power_grid"], ADVANCE["power_grid"] = start_power_grid, adv_power_grid
 
 
 # ------------------------------------------------------------------ supply chain
-# Fitted to research/supply_chain.json (2 runs). Chain: production (2-step delay) -> supplier
-# stock (ceiling) -> orders withdraw only stock above a reserve -> dispatch queue (withdrawals
-# stop when it is full: congestion) -> forward transport (fixed rate, 3-step conveyor) ->
-# receiving buffer -> receiving (rate x receiving_effort) -> retail -> sales.
+# Fitted to research/supply_chain.json + supply_chain_c1.json (3 runs, scratchpad E/supply_chain).
+# Chain: production (2-step delay) -> supplier stock (ceiling) -> orders withdraw available stock
+# -> dispatch queue (withdrawals stop when it is full: congestion) -> forward transport (3-step
+# conveyor) -> receiving buffer -> receiving (rate x receiving_effort) -> retail -> sales.
+# Idle supplier stock turns unavailable; maintenance restores it.
+# Maintenance takes part of the receiving capacity (round C: shipments +7 the step it stops).
+# Sales grow with retail stock (round C: ~27/step at stock 170, ~37/step at stock 1150).
 # Conveyors and buffers start empty, so shipments read 0 until orders flow.
 DEFAULTS["supply_chain"] = dict(
-    kp=39.86426356591622,       # production per step at production_effort 1, maintenance 0
-    dm=0.7247879406366704,      # share of production lost at full maintenance
+    kp=30.475112042903152,      # production per step at production_effort 1, maintenance 0 (2-step delay)
+    dm=0.6422716868477619,      # share of production lost at full maintenance
+    nm=2.824576042800507,       # maintenance exponent on that loss (loss = dm * maintenance**nm)
     s_cap=361.8,                # supplier stock ceiling (calm reading)
-    s_res=287.3101903821416,    # supplier stock that orders cannot withdraw
-    q_max=1196.542781990602,    # dispatch queue size where new withdrawals stop
-    trans=19.563455582353996,   # forward transport per step
-    kr=53.199612412715624,      # receiving per step per unit receiving_effort
-    dem=27.7,                   # retail sales per step (calm drain rate)
-    b_max=100.0,                # receiving buffer size where transport stops (guard; data peak ~91)
+    s_res=0.0,                  # supplier stock that orders cannot withdraw
+    ag=0.40909647277548145,     # share of available supplier stock that turns unavailable per step while it sits
+    tr=0.18669021390133464,     # share of unavailable stock made available again per step per unit maintenance
+    q_max=281.9821335794766,    # dispatch queue size where new withdrawals stop (congestion)
+    trans=67.9568444498031,     # forward transport per step at zero wear (3-step conveyor)
+    b_max=1225.3989644420017,   # receiving buffer size where transport stops
+    kr=55.01904875596659,       # receiving per step per unit receiving_effort
+    dr=0.6385018911433132,      # share of receiving taken by full maintenance (shared drive service)
+    dem=26.07451530226024,      # base retail sales per step
+    e=0.008425148350236628,     # extra retail sales per step per unit of retail stock
 )
 
 
 def start_supply(init, p):
-    return dict(s=_pos(_f(init, "inventory_supplier")), r=_pos(_f(init, "inventory_retail")),
-                pp=[0.0, 0.0], q=0.0, conv=[0.0, 0.0, 0.0], b=0.0)
+    s = _pos(_f(init, "inventory_supplier"))
+    return dict(s=s, a=s, r=_pos(_f(init, "inventory_retail")), pp=[0.0, 0.0], q=0.0,
+                conv=[0.0, 0.0, 0.0], b=0.0)
 
 
 def adv_supply(s, a, p):
@@ -330,18 +430,28 @@ def adv_supply(s, a, p):
     pe = _clip(_f(a, "production_effort", 1.0), 0.0, 1.5)
     re = _clip(_f(a, "receiving_effort", 1.0), 0.0, 1.5)
     mt = _clip(_f(a, "maintenance"), 0.0, 1.0)
-    s["pp"].append(p["kp"] * pe * _pos(1.0 - p["dm"] * mt))
-    s["s"] = min(s["s"] + s["pp"].pop(0), max(s["s"], p["s_cap"]))
-    w = min(oq, _pos(s["s"] - p["s_res"]), _pos(p["q_max"] - s["q"]))
-    s["s"] -= w
+    # supplier stock = available part a + unavailable part un. Available stock that sits turns
+    # unavailable at rate ag; maintenance makes it available again. Everything is available at reset.
+    av = s["a"]
+    av += -p["ag"] * av + p["tr"] * mt * _pos(s["s"] - av)
+    un = _pos(s["s"] - av)
+    cap, res = p["s_cap"], p["s_res"]
+    if un != 0.0:
+        cap, res = cap - un, _pos(res - un)
+    s["pp"].append(p["kp"] * pe * _pos(1.0 - p["dm"] * mt ** p["nm"]))
+    av = min(av + s["pp"].pop(0), max(av, cap))
+    w = min(oq, _pos(av - res), _pos(p["q_max"] - s["q"]))
+    av -= w
+    s["a"] = av
+    s["s"] = av + un
     s["q"] += w
     t = min(s["q"], p["trans"], _pos(p["b_max"] - s["b"]))
     s["q"] -= t
     s["conv"].append(t)
     s["b"] += s["conv"].pop(0)
-    recv = min(s["b"], p["kr"] * re)
+    recv = min(s["b"], p["kr"] * re * _pos(1.0 - p["dr"] * mt))
     s["b"] -= recv
-    s["r"] = _pos(s["r"] + recv - p["dem"])
+    s["r"] = _pos(s["r"] + recv - min(s["r"] + recv, p["dem"] + p["e"] * s["r"]))
     return {"shipments": recv, "inventory_supplier": s["s"], "inventory_retail": s["r"]}
 
 
@@ -349,28 +459,42 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 
 
 # ------------------------------------------------------------------ wildlife
-# Prey + hidden food stock per region (fitted to research/wildlife.json, both runs).
-# Food refills while prey is low, which gives the +60% prey overshoot after every recovery.
-# Harvest per capita saturates at low prey (refuge), so a pulse floors prey instead of 0.
-# Predators relax slowly; the counted share P/(P+Hv) reacts fast to prey crashes.
+# Prey + hidden food stock per region, predators, and a corridor transit pool. Fitted to all research
+# runs (first look + round C single-control run, scratchpad E/wildlife).
+# Food refills while prey is low, which gives the prey overshoot after every recovery.
+# Hunting: protected habitat shelters prey (exposure 1 - sh*hab, more in the north).
+# Low habitat protection raises prey deaths in both regions within a few steps.
+# Corridor: animals leave both regions while it is open and wait in a transit pool that settles in the
+# other region at 1/tp, 1/td per step, so closing it still brings animals home (both regions dip, then rebound).
+# Predator crowding saturates at high density (reset predators 8-15 fall ~5% per step).
 DEFAULTS["wildlife"] = dict(
-    b=0.26827089890725925,  # prey birth rate per unit food
-    mu=0.09590513736464606,  # prey death rate
-    rho_n=0.023275396046376906,  # food renewal, north
-    rho_s=0.02360487013137204,  # food renewal, south
-    hk_n=0.3283619188222149,  # habitat boost to food renewal, north
-    hk_s=6.72860722906197e-08,  # habitat boost to food renewal, south
-    cons=0.00033999569281078357,  # food eaten per prey
-    F0=0.7323078893157154,  # food level at reset (fraction of capacity)
-    hq=0.02405674656053212,  # harvest per unit quota
-    Ph=6.035700056359326,  # harvest refuge: prey level where harvest halves per capita
-    a=0.056073609737726744,  # predator growth at abundant prey
-    Hp=0.7561595746184241,  # prey level for half predator growth
-    m=0.034363976966760294,  # predator death rate
-    k=0.008970282476489611,  # predator crowding
-    mig=0.0017185230119157672,  # corridor mixing rate at full access
-    Hv=1.9543913481754216,  # prey level where half the predators are counted
-    Pb=655.1621846319042,  # prey crowding of births
+    b=0.26781299869299846,  # prey births per unit food
+    mu=0.09378084869219784,  # prey death rate
+    hm_n=0.2576395951605718,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
+    hm_s=0.18540464161864234,  # same, south
+    rho_n=0.022985768034225865,  # food renewal, north
+    rho_s=0.02109503717824554,  # food renewal, south
+    hk_n=0.3374597311757939,  # habitat boost to food renewal, north
+    hk_s=0.09220229754644624,  # habitat boost to food renewal, south
+    cons=0.0003492328513884398,  # food eaten per prey
+    F0=0.7332502500176639,  # food level at reset (fraction of capacity)
+    Pb=626.7976256737691,  # prey crowding of births
+    hq=0.017334337798512452,  # harvest per unit quota
+    Ph=4.123764333241913,  # harvest refuge: prey level where harvest halves per capita
+    sh_n=0.38748040073742684,  # shelter: hunting exposure 1 - sh*hab, north
+    sh_s=0.30993373356878345,  # shelter, south
+    a=0.060447236101810194,  # predator growth at abundant prey
+    Hp=1.2493526797510561,  # prey level for half predator growth
+    m=0.029621192537206093,  # predator death rate
+    k=0.016763889930661843,  # predator crowding
+    Dk=8.558428510509604,  # predator level where crowding per predator halves
+    Hv=2.09556997964094e-08,  # prey level where half the predators are counted
+    ep_n=0.011431681705489506,  # prey leaving the north per step at full corridor access
+    ep_s=0.01842451280556638,  # prey leaving the south per step at full corridor access
+    ed_n=0.017825653865054313,  # predators leaving the north per step at full corridor access
+    ed_s=0.017748456905400296,  # predators leaving the south per step at full corridor access
+    tp=49.97683271277038,  # prey transit pool: 1/tp of it settles in the other region per step
+    td=28.48842990500357,  # predator transit pool: 1/td settles per step
 )
 
 
@@ -380,7 +504,9 @@ def start_wildlife(init, p):
     dn = _pos(_f(init, "predator_north")) * (pn + hv) / max(pn, 1e-6)
     ds = _pos(_f(init, "predator_south")) * (ps + hv) / max(ps, 1e-6)
     f0 = min(p["F0"], 1.0)
-    return dict(pn=pn, ps=ps, dn=dn, ds=ds, fn=f0, fs=f0)
+    # go = animals that left last step (prey to north, prey to south, predators to north, to south)
+    return dict(pn=pn, ps=ps, dn=dn, ds=ds, fn=f0, fs=f0, go=(0.0, 0.0, 0.0, 0.0),
+                wpn=0.0, wps=0.0, wdn=0.0, wds=0.0)
 
 
 def adv_wildlife(s, a, p):
@@ -390,15 +516,29 @@ def adv_wildlife(s, a, p):
     for reg in ("n", "s"):
         prey = s["p" + reg]; food = s["f" + reg]; pred = s["d" + reg]
         rho = p["rho_" + reg] * (1 + p["hk_" + reg] * hab)
-        s["f" + reg] = min(max(food + rho * (1 - food) - p["cons"] * prey * food, 0.0), 1.0)
-        harvest = p["hq"] * quota * prey * prey / (prey + p["Ph"])
+        eat = p["cons"] * prey * food
+        s["f" + reg] = min(max(food + rho * (1.0 - food) - eat, 0.0), 1.0)
+        expo = _clip(1.0 - p["sh_" + reg] * hab, 0.0, 1.0)
+        harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"])
         birth = p["b"] * food / (1.0 + prey / p["Pb"])
-        s["p" + reg] = max(prey + prey * (birth - p["mu"]) - harvest, 1e-6)
-        s["d" + reg] = max(pred + pred * (p["a"] * prey / (prey + p["Hp"]) - p["m"] - p["k"] * pred), 1e-6)
-    fp = p["mig"] * cor * (s["pn"] - s["ps"])
-    fd = p["mig"] * cor * (s["dn"] - s["ds"])
-    s["pn"] -= fp; s["ps"] += fp
-    s["dn"] -= fd; s["ds"] += fd
+        death = p["mu"] * (1.0 + p["hm_" + reg] * (1.0 - hab))
+        v = prey + prey * (birth - death) - harvest
+        s["p" + reg] = v if v > 1e-6 else 1e-6
+        crowd = p["k"] * pred / (1.0 + pred / p["Dk"])
+        v = pred + pred * (p["a"] * prey / (prey + p["Hp"]) - p["m"] - crowd)
+        s["d" + reg] = v if v > 1e-6 else 1e-6
+    # corridor: journeys start only while it is open; animals already travelling still arrive
+    xpn = _clip(p["ep_n"] * cor, 0.0, 1.0) * s["pn"]; xps = _clip(p["ep_s"] * cor, 0.0, 1.0) * s["ps"]
+    xdn = _clip(p["ed_n"] * cor, 0.0, 1.0) * s["dn"]; xds = _clip(p["ed_s"] * cor, 0.0, 1.0) * s["ds"]
+    s["pn"] -= xpn; s["ps"] -= xps; s["dn"] -= xdn; s["ds"] -= xds
+    tpn, tps, tdn, tds = s["go"]
+    s["go"] = (xps, xpn, xds, xdn)
+    s["wpn"] += tpn; s["wps"] += tps; s["wdn"] += tdn; s["wds"] += tds
+    tp = max(p["tp"], 1.0); td = max(p["td"], 1.0)
+    rel = s["wpn"] / tp; s["wpn"] -= rel; s["pn"] += rel
+    rel = s["wps"] / tp; s["wps"] -= rel; s["ps"] += rel
+    rel = s["wdn"] / td; s["wdn"] -= rel; s["dn"] += rel
+    rel = s["wds"] / td; s["wds"] -= rel; s["ds"] += rel
     hv = p["Hv"]
     return {"prey_north": s["pn"], "predator_north": s["dn"] * s["pn"] / (s["pn"] + hv),
             "prey_south": s["ps"], "predator_south": s["ds"] * s["ps"] / (s["ps"] + hv)}
@@ -408,48 +548,53 @@ START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife
 
 
 # ------------------------------------------------------------------ reservoir
-# Grey-box fit to research data (Sep 25). Seasonal river inflow (sinusoid in steps since reset),
-# water balance with a hard spillway cap (excess leaves as spill in outflow), head-limited
-# delivery min(request, c0 + c1*level, water available), loss e0 + e1*level, irrigation
-# return flow through a two-tank delay (rt steps, fraction rf), and a slow stress memory m
-# that pulls quality down. m is driven by u = mean of each control's 0..1 position from the
-# brief's recovery action to its pulse action.
+# Grey-box fit to research data, first look + round C (Sep 25). Seasonal river inflow (sinusoid in
+# steps since reset), water balance with a hard spillway cap (excess leaves as spill in outflow),
+# delivery min(request, c0 + c1*level, water available), loss e0 + e1*level.
+# Bank storage: the reservoir exchanges kx*(H - level) per step with an aquifer whose head H starts
+# at H0 on every reset and relaxes toward the level at rate kh. A falling level draws water in (a
+# share ro of it shows in the inflow reading), a rising level loses some. No irrigation return
+# flow (round C: none seen in 90 steps of irrigation 8).
+# Quality: calm level qc, start-up transient from the first reading, a slow stress
+# memory m driven only by a joint push: u = excess of the mean 0..1 position (recovery -> pulse)
+# over th = 0.25, the most any one control alone can give.
 DEFAULTS["reservoir"] = dict(
-    A=11.2652372008, B=2.2341170372, P=67.8564523494, phi=0.0452866329,   # inflow = A + B*sin(2*pi*t/P + phi) + return flow
-    c0=8.9207735962, c1=0.0074794656,                  # delivery cap c0 + c1*level
-    e0=1.0995387127, e1=0.0005090763,                  # loss per step e0 + e1*level
-    Lcap=941.0,                                   # spillway level (measured, held fixed in the fit)
-    qc=0.9555117055, qa=0.0629294055, tq=4.3817157529,       # calm quality, memory weight, start-up time constant
-    g0=0.0011331768, g=0.0056554373, d=0.0052646445,    # memory: calm drive, stress drive, decay
-    rf=0.0497159246, rt=8.022753209,                  # irrigation return fraction and delay
+    A=11.279344763228828, B=2.2546514118561714, P=67.77337141928736, phi=0.015263764397348854,   # river = A + B*sin(2*pi*t/P + phi)
+    c0=9.082030387128691, c1=0.007593384533294581,   # delivery cap c0 + c1*level
+    e0=-0.19622625214888292, e1=0.0016530556531527793,   # loss per step e0 + e1*level
+    Lcap=941.0,   # spillway level (measured, held fixed in the fit)
+    kx=0.01604774298401246, kh=0.1382750495811783, H0=533.7342773766807, ro=0.6840276588459931,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
+    qc=0.9596712525080192, qa=0.09123982053881292, tq=4.660674394054027,   # calm quality, memory weight, start-up time constant
+    g0=0.0013703030433965336, g=0.0035950058192401185, d=0.006089635459834917, th=0.25,   # memory: calm drive, stress drive, decay, drive shape
 )
 
 
 def start_reservoir(init, p):
-    return dict(t=0, level=_pos(_f(init, "level")), q0=_f(init, "quality"),
-                m=0.0, s1=0.0, s2=0.0)
+    return dict(t=0, level=_pos(_f(init, "level")), q0=_f(init, "quality"), m=0.0, H=p["H0"])
 
 
 def adv_reservoir(s, a, p):
     aer = _f(a, "aeration", 1.0); irr = _pos(_f(a, "irrigation_allocation"))
     rel = _pos(_f(a, "release_rate", 2.0)); depth = _f(a, "withdrawal_depth")
-    s["t"] += 1; t = s["t"]; L = s["level"]; rt = p["rt"]
-    s["s1"] += irr - s["s1"] / rt
-    s["s2"] += s["s1"] / rt - s["s2"] / rt
-    inflow = p["A"] + p["B"] * math.sin(2 * math.pi * t / p["P"] + p["phi"]) + p["rf"] * s["s2"] / rt
+    s["t"] += 1; t = s["t"]; L = s["level"]
+    river = p["A"] + p["B"] * math.sin(2 * math.pi * t / p["P"] + p["phi"])
+    G = p["kx"] * (s["H"] - L)
+    s["H"] += p["kh"] * (L - s["H"])
+    inflow = river + (p["ro"] * G if G > 0 else 0.0)
+    wet = river + G
     loss = p["e0"] + p["e1"] * L
-    dlv = min(rel + irr, max(p["c0"] + p["c1"] * L, 0.0), max(L + inflow - loss, 0.0))
-    L = L + inflow - dlv - loss
+    dlv = min(rel + irr, max(p["c0"] + p["c1"] * L, 0.0), max(L + wet - loss, 0.0))
+    L = L + wet - dlv - loss
     spill = 0.0
     if L > p["Lcap"]:
         spill = L - p["Lcap"]; L = p["Lcap"]
     if L < 0:
         L = 0.0
     s["level"] = L
-    u = _clip(((aer - 1.0) / (0.0 - 1.0) + (irr - 0.0) / (8.0 - 0.0)
-               + (rel - 2.0) / (12.0 - 2.0) + (depth - 0.0) / (1.0 - 0.0)) / 4.0, 0.0, 1.0)
+    ub = _clip(((rel - 2.0) / 10.0 + irr / 8.0 + depth + (1.0 - aer)) / 4.0, 0.0, 1.0)
+    u = max(ub - p["th"], 0.0) / (1.0 - p["th"])
     m = s["m"]
-    s["m"] = m + (p["g0"] + p["g"] * u) * (1 - m) - p["d"] * m
+    s["m"] = m + ((p["g0"] + p["g"] * u) * (1 - m) - p["d"] * m)
     q = p["qc"] - p["qa"] * s["m"] + (s["q0"] - p["qc"]) * math.exp(-t / p["tq"])
     return {"level": L, "inflow": inflow, "outflow": dlv + spill, "quality": q}
 
@@ -458,106 +603,184 @@ START["reservoir"], ADVANCE["reservoir"] = start_reservoir, adv_reservoir
 
 
 # ------------------------------------------------------------------ ad auction
-# Structural model fitted to research runs 1+2. Hidden state starts at the fixed reset
-# convention (full reach, empty pipeline); the initial reading is ignored.
-# reach R depleted by exposure, unavailable pool V of converted customers, budget pacing,
-# rivals back off as reach thins (g), attention A -> pending purchases Q -> fulfilment cap F.
+# Round E structural model, fitted on all research runs (first look + round C).
+# Audience x in [0, 1] is cut into nested bins; breadth w targets x < w (a partly covered
+# bin counts fractionally). Each bin has reach R (repeated exposure removes people, back in
+# tauR), converted-unavailable V (back in tauV), attention A and pending purchases Q.
+# Win rate per bin saturates in bid, scaled by a conserved pool of rival capital K that
+# drifts toward where we bid and where reachable people are, and is boosted where reach
+# is thin. Budget pacing cuts win_rate by pace**kap. Purchase starts need follow-up
+# exposure (k1) plus a spontaneous part (k0); broader audiences convert less (cq);
+# completions share one fulfilment capacity F. Hidden state starts at the fixed reset
+# convention (full reach, empty pipeline, uniform rivals); the initial reading is ignored.
+AD_EDGES = [0.0, 0.55, 0.775, 1.0]
+AD_D = [AD_EDGES[i + 1] - AD_EDGES[i] for i in range(len(AD_EDGES) - 1)]
 DEFAULTS["ad_auction"] = dict(
-    wmax=0.45874519488492105,   # win_rate ceiling at high bid
-    b0=2.821663064831036,       # bid scale of the win curve
-    g=0.5591357598462097,       # win_rate boost as available reach thins
-    vp=263.495190775299,        # spend scale at bid 1.5
-    pe=0.5311882905519455,      # price exponent in bid
-    f=0.1708015179227022,       # reach lost per step per unit exposure
-    tauR=38.8664257197138,      # reach recovery time (steps)
-    a=0.6271373826674157,       # attention gained per unit impressions (x100)
-    k1=0.15954119749096352,     # attention -> started purchase rate
-    k2=0.12256620140696878,     # pending -> completed rate
-    F=5.307863115442049,        # fulfilment cap (conversions per step)
-    v=0.002177616146042035,     # converted customers made unavailable per conversion
-    tauV=40.71399300675976,     # time for converted customers to return (steps)
+    wmax=0.6264306850620251,    # win_rate ceiling at high bid (fresh reach, rival pressure 1)
+    b0=3.748648874522589,       # bid scale of the win curve (scaled by local rival pressure K)
+    g=0.35222224813857317,      # win boost where reachable people are thin
+    vp=255.02490192982265,      # spend per unit reached-and-won at bid 1.5
+    pe=0.26954681761367283,     # price exponent in bid
+    kap=0.8966676216323695,     # pacing: win_rate x pace**kap (kap<1: bid shading, not pure throttling)
+    f=0.1077324468008594,       # reach lost per step per unit exposure
+    tauR=92.36064954122939,     # reach recovery time (steps)
+    a=1.1479499540027378,       # attention gained per unit impressions (x100)
+    k1=0.05129176694504404,     # follow-up: purchase starts per attention at exposure xr
+    k0=0.11709938423992625,     # spontaneous purchase starts per attention
+    xr=0.26,                    # reference exposure for k1 (fixed)
+    k2=0.12437010286627279,     # pending -> completed rate
+    F=5.3429898348924985,       # fulfilment capacity (conversions per step)
+    v=0.0015854977437210016,    # converted customers made unavailable per conversion (per unit breadth)
+    tauV=20.512622290026798,    # time for converted customers to return (steps)
+    cq=2.641907315937337,       # conversion propensity falls as exp(-cq*x) across the audience
+    phi=0.5948239341169798,     # price rises with local rival pressure K**phi
+    rho=0.7081650682086872,     # rival capital pulled toward where we bid (conserved pool)
+    tauK=33.02093949898502,     # rival capital relocation time (steps)
+    mu=0.7060571762624779,      # rival capital pulled toward reachable people
 )
 
 
+def _ad_binavg_exp(c, e0, e1):
+    if abs(c) < 1e-9:
+        return 1.0
+    return (math.exp(c * e1) - math.exp(c * e0)) / (c * (e1 - e0))
+
+
 def start_ad(init, p):
-    return dict(R=1.0, A=0.0, Q=0.0, V=0.0)
+    nb = len(AD_D)
+    return dict(R=[1.0] * nb, V=[0.0] * nb, A=[0.0] * nb, Q=[0.0] * nb, K=[1.0] * nb,
+                qx=[_ad_binavg_exp(-p["cq"], AD_EDGES[i], AD_EDGES[i + 1]) for i in range(nb)])
 
 
 def adv_ad(s, a, p):
+    nb = len(AD_D)
+    R = s["R"]; V = s["V"]; A = s["A"]; Q = s["Q"]; K = s["K"]; qx = s["qx"]
+    wmax, b0, g, phi, kap = p["wmax"], p["b0"], p["g"], p["phi"], p["kap"]
+    k1, k0, xr, k2, F = p["k1"], p["k0"], p["xr"], p["k2"], p["F"]
+    f, tauR, v, tauV, aa = p["f"], p["tauR"], p["v"], p["tauV"], p["a"]
+    tauK = p["tauK"]
     b = _pos(_f(a, "bid", 1.5)); cap = _pos(_f(a, "budget_cap", 20.0))
-    w = _clip(_f(a, "targeting_breadth", 0.55), 0, 1)
-    avail = _pos(s["R"] - s["V"])
-    wr = p["wmax"] * (1 - math.exp(-b / max(p["b0"], 1e-9))) * (1 + p["g"] * (1 - avail))
-    wr = min(wr, 1.0)
-    price = p["vp"] * (b / 1.5) ** p["pe"]
-    S = price * w * avail * wr
-    pace = min(1.0, cap / S) if S > 0 else 1.0
-    spend = S * pace; wro = wr * pace
-    imps = w * avail * wro
-    conv = min(p["k2"] * s["Q"], p["F"])
-    started = p["k1"] * s["A"]
-    s["Q"] += started - conv
-    s["A"] += p["a"] * imps * 100 - started
-    R = s["R"]
-    R += -p["f"] * wro * avail * R + (1 - R) / p["tauR"]
-    s["R"] = _clip(R, 0.0, 1.0); s["V"] = _pos(s["V"] + p["v"] * conv - s["V"] / p["tauV"])
-    return {"win_rate": wro, "spend": spend, "conversions": conv}
+    w = _clip(_f(a, "targeting_breadth", 0.55), 0.0, 1.0)
+    pb = p["vp"] * (b / 1.5) ** p["pe"]
+    u = [0.0] * nb; av = [0.0] * nb; vol = [0.0] * nb; Wu = [0.0] * nb
+    Su = 0.0; Vt = 0.0
+    for i in range(nb):
+        ui = _clip((w - AD_EDGES[i]) / AD_D[i], 0.0, 1.0)
+        u[i] = ui
+        x = _pos(R[i] - V[i])
+        av[i] = x
+        vol[i] = ui * AD_D[i] * x
+        Ki = K[i] if K[i] > 1e-6 else 1e-6
+        wi = wmax * (1.0 - math.exp(-b / (b0 * Ki))) * (1.0 + g * (1.0 - x))
+        Wu[i] = wi if wi < 1.0 else 1.0
+        pr = pb * Ki ** phi if phi != 0.0 else pb
+        Su += vol[i] * Wu[i] * pr; Vt += vol[i]
+    pace = cap / Su if Su > cap else 1.0
+    wf = pace ** kap if kap != 1.0 else pace
+    spend = Su * pace
+    It = 0.0
+    for i in range(nb):
+        It += vol[i] * Wu[i]
+    win = It * wf / Vt if Vt > 0 else 0.0
+    D = 0.0
+    for i in range(nb):
+        D += k2 * Q[i]
+    sF = F / D if D > F else 1.0
+    conv = 0.0
+    bf = b * pace ** (1.0 - kap) / 1.5
+    mu = p["mu"]; rho = p["rho"]
+    tg = [((av[i] ** mu if mu > 0 else 1.0) * (1.0 + rho * (u[i] * bf))) for i in range(nb)]
+    nrm = 0.0
+    for i in range(nb):
+        nrm += tg[i] * AD_D[i]
+    for i in range(nb):
+        x = u[i] * Wu[i] * wf
+        ci = k2 * Q[i] * sF
+        conv += ci
+        st = A[i] * (k0 + k1 * x / xr)
+        Q[i] += st - ci
+        A[i] += aa * 100.0 * vol[i] * Wu[i] * wf * qx[i] - st
+        R[i] = _clip(R[i] - f * x * av[i] * R[i] + (1.0 - R[i]) / tauR, 0.0, 1.0)
+        V[i] = _pos(V[i] + v * ci / AD_D[i] - V[i] / tauV)
+        K[i] += (tg[i] / nrm - K[i]) / tauK
+    return {"win_rate": win, "spend": spend, "conversions": conv}
 
 
 START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 
 
 # ------------------------------------------------------------------ social contagion
-# Fitted structural model (structural_v1). Each community has loyal members M and
-# incentive-led members J. J leaves at rate `lam` when incentive is off (the ~25%
-# start-up dip and the post-pulse crash). Seeding x (1 + incentive) sends people into
-# a 2-stage onboarding queue (`tq` steps per stage), throttled by room left in a
-# finite pool (`Na`, `Nb`); bridge outreach splits seeding between A (1-br) and B (br).
-# Graduates join J in share phi*incentive/2, else M. Organic growth (a + b*M)*room.
-# E = incentive expectation (EMA over `tau_e`); when incentive falls below it, loyal
-# members churn at lamM*(E - incentive) (the undershoot below the pre-pulse level).
+# Fitted structural model (round E, R2_forms_sharedroom). Per community: core members K (the initial
+# (1-f) share, never leave), loyal recruits L (organic + bridge introductions), locally
+# seeded recruits S, incentive-led members J (the initial f share, plus converts).
+# Seeding fills a 2-stage onboarding queue (`tq` steps per stage): A gets sa*seed*(1-br),
+# B gets sb*seed, of which the bridge share br goes through a slower introduction queue
+# (`tq2` per stage) into L. Seeded onboarding is throttled by one shared capacity `Nt`
+# (A + B members). Incentive adds no recruits; while it is on, L and S convert to J at
+# kc*u (u = incentive/2) and J stays; when it is off J leaves at lam*(1-u) (the ~25% start-up
+# dip and the crash back to the core after any incentive period), S churns at lr*(1-u), and
+# L and S churn at lamM*(E - incentive) while it sits below its expectation E (EMA, `tau_e`).
+# Organic growth (a + b*A)*room goes to L; room is the shared capacity room.
+# Untested: incentive held between 0 and 2 (research used only 0 and 2); there conversion (kc*u) and
+# drain (lam*(1-u)) both run, so members slowly leak away.
 DEFAULTS["social_contagion"] = dict(
-    f=0.4422848322457665,        # share of initial members who are incentive-led
-    lam=0.08240899902833297,     # incentive-led drain per step at zero incentive
-    tq=3.9837598952545807,       # steps per onboarding stage (2 stages)
-    sa=0.6612618471037612,       # queue entries per unit seeding in A
-    sb=0.15333397405304403,      # queue entries per unit seeding in B
-    phi=0.9414663451326307,      # share of graduates who are incentive-led at full incentive
-    Na=203.9363013809878,        # pool size A
-    Nb=146.51461482935395,       # pool size B
-    aa=0.7094417818728652,       # organic growth A per step (times room)
-    ab=0.34448439254204555,      # organic growth B per step (times room)
-    ba=-0.006154526865592056,    # organic growth per loyal member A
-    bb=9.377757789382251e-05,    # organic growth per loyal member B
-    lamM=0.04507760515500967,    # loyal churn per step per unit of unmet incentive expectation
-    tau_e=9.891084543251234,     # incentive expectation time constant (steps)
+    f=0.3937928344280045,         # share of initial members who are incentive-led (leave at reset)
+    lam=0.0821023072374982,       # incentive-led drain per step at zero incentive
+    tq=4.997774906771391,         # steps per local onboarding stage (2 stages)
+    tq2=40.142792333100665,       # steps per bridge-introduction stage (2 stages)
+    sa=1.025974357057521,         # A queue entries per unit seeding (times 1 - bridge)
+    sb=0.34928196883019497,       # B queue entries per unit seeding (bridge share goes via introductions)
+    Nt=440.7082879958301,         # shared onboarding capacity (A + B members)
+    aa=0.7053333177480016,        # organic growth A per step (times room)
+    ab=0.12972760227206098,       # organic growth B per step (times room)
+    ba=-0.005548776280779653,     # organic growth per member A
+    bb=0.003910881753617038,      # organic growth per member B
+    kc=0.04327380200237239,       # recruits converted to incentive-led per step at full incentive
+    lr=0.010966633225799948,      # seeded-recruit churn per step at zero incentive
+    lamM=0.4775763072954847,      # recruit churn per step per unit of unmet incentive expectation
+    tau_e=13.278237661719984,     # incentive expectation time constant (steps)
 )
 
 
 def start_social(init, p):
     Aa = _pos(_f(init, "adopters_a")); Ab = _pos(_f(init, "adopters_b"))
-    return dict(Ja=p["f"] * Aa, Jb=p["f"] * Ab, Ma=(1 - p["f"]) * Aa, Mb=(1 - p["f"]) * Ab,
-                Q1a=0.0, Q1b=0.0, Q2a=0.0, Q2b=0.0, E=0.0)
+    f = p["f"]
+    s = dict(E=0.0)
+    for c, A0 in (("a", Aa), ("b", Ab)):
+        s["K" + c] = (1 - f) * A0; s["J" + c] = f * A0
+        for k in ("L", "S", "Q1", "Q2", "P1", "P2"):
+            s[k + c] = 0.0
+    return s
 
 
 def adv_social(s, a, p):
-    seed = _clip(_f(a, "seeding"), 0, 10); inc = _clip(_f(a, "incentive"), 0, 2)
+    seed = _clip(_f(a, "seeding"), 0, 10); u = _clip(_f(a, "incentive"), 0, 2) / 2
     br = _clip(_f(a, "bridge_outreach"), 0, 1)
-    s["E"] += (inc - s["E"]) / p["tau_e"]
-    jfrac = p["phi"] * min(inc / 2, 1)
-    drain = p["lam"] * max(0.0, 1 - inc / 2)
-    churn = p["lamM"] * max(0.0, s["E"] - inc)
+    drain = p["lam"] * (1 - u)
+    s["E"] += (2 * u - s["E"]) / p["tau_e"]
+    churnE = p["lamM"] * max(0.0, s["E"] - 2 * u)
+    A = {c: s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c] for c in ("a", "b")}
+    roomS = max(0.0, 1 - (A["a"] + A["b"]) / p["Nt"])
     out = {}
-    for c, share, obs in (("a", 1 - br, "adopters_a"), ("b", br, "adopters_b")):
-        M = s["M" + c]; J = s["J" + c]
-        room = max(0.0, 1 - (M + J) / p["N" + c])
-        q_in = p["s" + c] * seed * share * (1 + inc) * room
+    for c, loc, obs in (("a", p["sa"] * (1 - br), "adopters_a"), ("b", p["sb"] * (1 - br), "adopters_b")):
+        g = seed * roomS
+        ql = loc * g
+        qx = p["sb"] * br * g if c == "b" else 0.0
         o1 = s["Q1" + c] / p["tq"]; o2 = s["Q2" + c] / p["tq"]
-        s["Q1" + c] += q_in - o1; s["Q2" + c] += o1 - o2
-        dJ = o2 * jfrac - drain * J
-        dM = o2 * (1 - jfrac) + (p["a" + c] + p["b" + c] * M) * room - churn * M
-        s["J" + c] = max(0.0, J + dJ); s["M" + c] = max(0.0, M + dM)
-        out[obs] = s["M" + c] + s["J" + c]
+        s["Q1" + c] = s["Q1" + c] + ql - o1
+        r1 = s["P1" + c] / p["tq2"]; r2 = s["P2" + c] / p["tq2"]
+        s["P1" + c] = s["P1" + c] + qx - r1; s["P2" + c] = s["P2" + c] + r1 - r2
+        s["Q2" + c] = s["Q2" + c] + o1 - o2
+        L = s["L" + c]; S = s["S" + c]; J = s["J" + c]
+        org = (p["a" + c] + p["b" + c] * A[c]) * roomS
+        convL = p["kc"] * u * L; convS = p["kc"] * u * S
+        leaveJ = drain * J
+        leaveS = p["lr"] * (1 - u) * S
+        dJ = convL + convS - leaveJ
+        dS = o2 - convS - leaveS - churnE * S
+        dL = r2 + org - convL - churnE * L
+        s["J" + c] = max(0.0, J + dJ); s["S" + c] = max(0.0, S + dS); s["L" + c] = max(0.0, L + dL)
+        out[obs] = s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c]
     return out
 
 
@@ -565,50 +788,96 @@ START["social_contagion"], ADVANCE["social_contagion"] = start_social, adv_socia
 
 
 # ------------------------------------------------------------------ hospital queue
-# Fitted fluid queue (winner "minimal"). Patients arrive (base `lam` plus electives
-# into a list capped at `Emax`), wait, get admitted while occupancy < `Cs`, and are
-# discharged from step `dead` on at most `mu` per step. Arrivals past `Qmax` are
-# referred elsewhere; waiting patients leave at rate `r`.
-# mu = k * (staffing - N) * diag_balance * (1 + g*overtime) * (1 - phi*P)
-#   N: handover (hO staff-equivalents per added staff, decays over th steps).
-#   P: follow-up program load, lags followup_capacity over tP steps.
+# Fitted fluid queue (round E, all research runs). Patients arrive (base `lam` plus
+# electives into a list capped at `Emax`), wait, get admitted while occupancy < `Cs`,
+# and are discharged from step `dead` on, at most `mu` work units per step; an elective
+# needs `we` units. Arrivals past `Qmax` are referred elsewhere; waiting patients leave
+# at rate `r`.
+# mu = k * s_eff * diag_balance**hx * (1 + bo*ot) * (1 - fF*F) * (1 - phi*P)
+#   s_eff: added staff, and staff moved between assessment and treatment by a diag
+#          change (|d change| * staffing), are only `eta` effective for `To` steps.
+#          Staff cuts are instant and remove the newest added staff first.
+#   F: fatigue. Lags overtime * min(1, waiting / Wf) over tF steps, so overtime only
+#      tires staff while patients are waiting.
+#   P: follow-up program load, lags followup_capacity over tP steps (starts empty).
 # wait = EMA(alpha) of cw * waiting / (smoothed discharges + reneging). urgent_priority ignored.
 DEFAULTS["hospital_queue"] = dict(
-    lam=11.452924253952201,    # base arrivals per step
-    Emax=56.430645440203776,   # elective waiting-list cap
-    Qmax=330.1859055462481,    # total queue cap
-    r=0.013778164740254234,    # reneging fraction per step
-    Cs=74.26987901138362,      # service occupancy cap
-    k=1.365737870516677,       # discharges per step per staff at balanced diag
-    g=-0.4162710282890295,     # net overtime effect on capacity
-    hO=1.1594629833006804,     # staff-equivalents lost per added staff
-    th=21.785354113531003,     # orientation recovery time (steps)
-    phi=0.5623421955576099,    # staff share diverted by a full follow-up program
-    tP=11.031247309233406,     # follow-up program fill/empty time (steps)
-    cw=2.316957775540321,      # wait scale
-    tb=21.327243176884295,     # smoothing of recent discharges (steps)
-    alpha=0.09782701141000551, # wait EMA weight
-    dead=3.0,                  # steps before the first discharge after reset
+    lam=11.515616926112909,     # base arrivals per step
+    Emax=68.41379828715105,     # elective waiting-list cap
+    Qmax=331.68039170150433,    # total queue cap (overflow referred elsewhere)
+    r=0.016408766002698423,     # reneging fraction of waiting patients per step
+    Cs=76.30531098409011,       # service occupancy cap (chairs + beds)
+    k=1.0171433535619543,       # work per staff per step (regular-patient units) at balanced diag
+    phi=0.4308252550576974,     # staff share diverted by a full follow-up program
+    tP=64.21499393686628,       # follow-up program fill/empty time (steps)
+    To=105.95822557579072,      # orientation time for added or moved staff (steps)
+    eta=0.9247507525185236,     # effectiveness of staff during orientation
+    bo=0.31680848046122956,     # overtime work boost at full overtime
+    fF=0.654498202867752,       # capacity lost at full fatigue
+    tF=44.716260056911,         # fatigue build/recovery time (steps)
+    Wf=10.004613708556624,      # waiting patients at which overtime fully fatigues
+    we=1.8049617307561252,      # work per elective patient (regular patient = 1)
+    hx=0.6952436800831798,      # diag balance exponent (1 = linear tent peaked at 0.4)
+    cw=2.416268718423094,       # wait scale
+    tb=18.04323790268739,       # smoothing of recent discharges (steps)
+    alpha=0.0836048260060405,   # wait EMA weight
+    dead=2.0,                   # steps before the first discharge after reset
 )
 
 
 def start_hospital(init, p):
-    return dict(W=max(0.0, _f(init, "queue")), E=0.0, S=0.0, Snew=0.0,
-                w=_f(init, "wait_time"), Dbar=_f(init, "discharges"), N=0.0, P=0.0,
-                s_prev=20.0, t=0, decN=math.exp(-1.0 / max(p["th"], 1e-6)))
+    return dict(W=max(0.0, _f(init, "queue")), E=0.0, Sr=0.0, Se=0.0, Nr=0.0, Ne=0.0,
+                w=_f(init, "wait_time"), Dbar=_f(init, "discharges"), P=0.0, F=0.0,
+                pend=[], mv=[], s_prev=20.0, d_prev=0.4, wprev=0.0, t=0)
 
 
 def adv_hospital(s, a, p):
     st = _f(a, "staffing", 20.0); ot = _f(a, "overtime"); dg = _f(a, "diagnostic_allocation", 0.4)
-    s["N"] = min(st, max(0.0, s["N"] + p["hO"] * (st - s["s_prev"])))
+    To = p["To"]
+    # orientation cohorts [age, amount]: added staff (cuts remove the newest first) and moved staff
+    pend, mv = s["pend"], s["mv"]
+    ds = st - s["s_prev"]
+    if ds > 0:
+        pend.append([0, ds])
+    elif ds < 0:
+        cut = -ds
+        while cut > 1e-12 and pend:
+            if pend[-1][1] <= cut:
+                cut -= pend.pop()[1]
+            else:
+                pend[-1][1] -= cut
+                cut = 0.0
+    Np = 0.0
+    for c in pend:
+        Np += c[1] * min(1.0, max(0.0, To - c[0]))
+    dd = abs(dg - s["d_prev"]) * st
+    if dd > 0:
+        mv.append([0, dd])
+    for c in mv:
+        Np += c[1] * min(1.0, max(0.0, To - c[0]))
+    Np = min(Np, st)
+    s_eff = st - (1.0 - p["eta"]) * Np
     s["s_prev"] = st
+    s["d_prev"] = dg
     s["P"] += (_f(a, "followup_capacity") - s["P"]) / max(p["tP"], 1.0)
     h = max(0.0, min(dg / 0.4, (1.0 - dg) / 0.6))
-    mu = max(0.0, p["k"] * (st - s["N"]) * h * (1.0 + p["g"] * ot) * (1.0 - p["phi"] * s["P"]))
-    W, E, S = s["W"], s["E"], s["S"]
-    Qprev = W + E + S + s["Snew"]
-    D = min(S, mu) if s["t"] >= p["dead"] else 0.0
-    S += s["Snew"] - D
+    if p["hx"] != 1.0:
+        h = h ** p["hx"]
+    s["F"] += (ot * min(1.0, s["wprev"] / max(p["Wf"], 1e-6)) - s["F"]) / max(p["tF"], 1.0)
+    otf = (1.0 + p["bo"] * ot) * max(0.0, 1.0 - p["fF"] * s["F"])
+    mu = max(0.0, p["k"] * s_eff * h * otf * (1.0 - p["phi"] * s["P"]))
+    W, E, Sr, Se = s["W"], s["E"], s["Sr"], s["Se"]
+    Qprev = W + E + Sr + Se + s["Nr"] + s["Ne"]
+    D = 0.0
+    if s["t"] >= p["dead"]:
+        S = Sr + Se
+        if S > 0.0:
+            D = min(S, mu / ((Sr + p["we"] * Se) / S))
+            f = D / S
+            Sr -= Sr * f
+            Se -= Se * f
+    Sr += s["Nr"]
+    Se += s["Ne"]
     e_in = min(max(0.0, _f(a, "elective_scheduling")), max(0.0, p["Emax"] - E))
     arr = p["lam"] + e_in
     room = max(0.0, p["Qmax"] - Qprev)
@@ -618,22 +887,33 @@ def adv_hospital(s, a, p):
     W += arr - e_in
     E += e_in
     tot = W + E
-    Snew = min(tot, max(0.0, p["Cs"] - S))
+    adm = min(tot, max(0.0, p["Cs"] - Sr - Se))
+    Nr = Ne = 0.0
     if tot > 0.0:
-        keep = 1.0 - Snew / tot
+        Nr = adm * W / tot
+        Ne = adm * E / tot
+        keep = 1.0 - adm / tot
         W *= keep
         E *= keep
     W *= 1.0 - p["r"]
     E *= 1.0 - p["r"]
     waiting = W + E
+    s["wprev"] = waiting
     s["Dbar"] += (D - s["Dbar"]) / max(p["tb"], 1.0)
     out_rate = s["Dbar"] + p["r"] * waiting
     T = p["cw"] * waiting / out_rate if out_rate > 1e-9 else 0.0
     s["w"] += p["alpha"] * (T - s["w"])
-    s["N"] *= s["decN"]
-    s["W"], s["E"], s["S"], s["Snew"] = W, E, S, Snew
+    for c in pend:
+        c[0] += 1
+    while pend and pend[0][0] >= To + 1.0:
+        pend.pop(0)
+    for c in mv:
+        c[0] += 1
+    while mv and mv[0][0] >= To + 1.0:
+        mv.pop(0)
+    s["W"], s["E"], s["Sr"], s["Se"], s["Nr"], s["Ne"] = W, E, Sr, Se, Nr, Ne
     s["t"] += 1
-    return {"wait_time": s["w"], "queue": W + E + S + Snew, "discharges": D}
+    return {"wait_time": s["w"], "queue": W + E + Sr + Se + Nr + Ne, "discharges": D}
 
 
 START["hospital_queue"], ADVANCE["hospital_queue"] = start_hospital, adv_hospital
