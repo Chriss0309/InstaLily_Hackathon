@@ -1,0 +1,76 @@
+{
+  "system_id": "market",
+  "brief": "Price, traded volume and order-book depth. Interest rate and transaction tax are fractions per trading period. Producer and consumer groups have different reservation values, storage capacities and placement speeds. Production consumes working cash; final consumption returns revenue. Their orders move through preparation and execution; a new policy does not cancel commitments already made. Completed trades transfer goods and cash between customers and finite dealer books. Dealers share settlement and outside hedging resources. Inventory may tie up funding until settlement, adverse price moves may reduce risk capacity, and investors may shift desired exposure toward recently successful strategies. Reported depth is an aggregate: the side, location and settlement status of the available capacity can change what a subsequent reversal does. Customer warehouses start half full with full working cash, dealer books start neutral, and orders and settlement commitments start empty. Intervention bounds: interest_rate [0.0, 0.1], transaction_tax [0.0, 0.05]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"interest_rate\": 0.0, \"transaction_tax\": 0.0}. Reference pulse action: {\"interest_rate\": 0.1, \"transaction_tax\": 0.05}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "price",
+    "volume",
+    "depth"
+  ],
+  "interventions": {
+    "interest_rate": [
+      0.0,
+      0.1
+    ],
+    "transaction_tax": [
+      0.0,
+      0.05
+    ]
+  },
+  "documents": [
+    {
+      "id": "market-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "market-initialization",
+      "title": "Reset and initial observations",
+      "text": "Price, traded volume and order-book depth. Interest rate and transaction tax are fractions per trading period. Producer and consumer groups have different reservation values, storage capacities and placement speeds. Production consumes working cash; final consumption returns revenue. Their orders move through preparation and execution; a new policy does not cancel commitments already made. Completed trades transfer goods and cash between customers and finite dealer books. Dealers share settlement and outside hedging resources. Inventory may tie up funding until settlement, adverse price moves may reduce risk capacity, and investors may shift desired exposure toward recently successful strategies. Reported depth is an aggregate: the side, location and settlement status of the available capacity can change what a subsequent reversal does. Customer warehouses start half full with full working cash, dealer books start neutral, and orders and settlement commitments start empty.\nA reset samples only the initial physical observable values from these ranges: {\"depth\": [80.0, 120.0], \"price\": [90.0, 110.0], \"volume\": [80.0, 120.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "market-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "market",
+    "observables": [
+      "price",
+      "volume",
+      "depth"
+    ],
+    "intervention_bounds": {
+      "interest_rate": [
+        0.0,
+        0.1
+      ],
+      "transaction_tax": [
+        0.0,
+        0.05
+      ]
+    },
+    "brief": "Price, traded volume and order-book depth. Interest rate and transaction tax are fractions per trading period. Producer and consumer groups have different reservation values, storage capacities and placement speeds. Production consumes working cash; final consumption returns revenue. Their orders move through preparation and execution; a new policy does not cancel commitments already made. Completed trades transfer goods and cash between customers and finite dealer books. Dealers share settlement and outside hedging resources. Inventory may tie up funding until settlement, adverse price moves may reduce risk capacity, and investors may shift desired exposure toward recently successful strategies. Reported depth is an aggregate: the side, location and settlement status of the available capacity can change what a subsequent reversal does. Customer warehouses start half full with full working cash, dealer books start neutral, and orders and settlement commitments start empty. Intervention bounds: interest_rate [0.0, 0.1], transaction_tax [0.0, 0.05]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"interest_rate\": 0.0, \"transaction_tax\": 0.0}. Reference pulse action: {\"interest_rate\": 0.1, \"transaction_tax\": 0.05}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "market-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "market-initialization",
+        "title": "Reset and initial observations",
+        "text": "Price, traded volume and order-book depth. Interest rate and transaction tax are fractions per trading period. Producer and consumer groups have different reservation values, storage capacities and placement speeds. Production consumes working cash; final consumption returns revenue. Their orders move through preparation and execution; a new policy does not cancel commitments already made. Completed trades transfer goods and cash between customers and finite dealer books. Dealers share settlement and outside hedging resources. Inventory may tie up funding until settlement, adverse price moves may reduce risk capacity, and investors may shift desired exposure toward recently successful strategies. Reported depth is an aggregate: the side, location and settlement status of the available capacity can change what a subsequent reversal does. Customer warehouses start half full with full working cash, dealer books start neutral, and orders and settlement commitments start empty.\nA reset samples only the initial physical observable values from these ranges: {\"depth\": [80.0, 120.0], \"price\": [90.0, 110.0], \"volume\": [80.0, 120.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "market-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

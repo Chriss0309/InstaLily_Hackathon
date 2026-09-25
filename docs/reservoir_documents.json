@@ -1,0 +1,20 @@
+{
+  "system_id": "reservoir",
+  "documents": [
+    {
+      "id": "reservoir-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "reservoir-initialization",
+      "title": "Reset and initial observations",
+      "text": "Reservoir water volume, incoming and delivered outgoing water per tick, and an outlet water-quality index from zero to one. Release and irrigation request water per tick. Withdrawal depth selects shallow versus deep release; irrigation draws near the surface. Aeration increases oxygen transfer and vertical mixing. Water is stratified: temperature, dissolved material, algae and oxygen can differ by depth, although only aggregate volume and outlet quality are observed. Seasonal river supply brings nutrients. Light, nutrient availability, decomposition and oxygen interact. Biomass can foul withdrawal screens, restricting actual discharge; flushing and aeration remove some of that attached material. Groundwater, irrigated land and deposited material may return water or contaminants after a delay. A deep release can change later surface quality by changing stored layers, while aeration can either dilute an outlet or remobilize deeper material. Initial instrument readings are observed; internal layers start from the same reference profile on every reset. A tick is one operating day.\nA reset samples only the initial physical observable values from these ranges: {\"inflow\": [8.0, 12.0], \"level\": [400.0, 600.0], \"outflow\": [4.0, 8.0], \"quality\": [0.78, 0.94]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "reservoir-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ]
+}

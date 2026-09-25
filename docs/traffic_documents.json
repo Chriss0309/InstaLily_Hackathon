@@ -1,0 +1,20 @@
+{
+  "system_id": "traffic",
+  "documents": [
+    {
+      "id": "traffic-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "traffic-initialization",
+      "title": "Reset and initial observations",
+      "text": "Observe terminal flows and mean speeds on two routes. Light and heavy vehicles retain their route, class and crossing commitments after entry. Toll changes the arriving mix; ramp metering changes admitted demand. Signal timing divides new crossing admissions, freight priority changes which waiting class gets service, and clearance effort shifts a shared crew from intersection operation toward downstream exits. Vehicles already crossing keep occupying the shared junction until their committed work finishes and exit space opens. Thus one route can obstruct the other even under unchanged signals. Lane closure affects different sections unequally. Finite approach, junction and exit buffers reject excess arrivals; waiting approach drivers may divert. Route learning, crew fatigue/switching costs and persistent spillback fronts are three possible mechanisms; exactly two apply. Compare toll and ramp preparations with similar totals to change vehicle mix; compare clearance with a signal reversal after stopping arrivals. Reported speed combines observed completed journey times with current stopped and moving class mix; equal route totals can therefore report different speeds. Roads and crossings start empty.\nA reset samples only the initial physical observable values from these ranges: {\"flow_a\": [30.0, 45.0], \"flow_b\": [30.0, 45.0], \"speed_a\": [30.0, 45.0], \"speed_b\": [30.0, 45.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "traffic-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ]
+}

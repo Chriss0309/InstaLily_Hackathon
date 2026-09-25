@@ -1,0 +1,8 @@
+# Same versions as the scoring sandbox, so "works locally" means "works when scored".
+numpy==2.3.5
+scipy==1.16.3
+scikit-learn==1.7.2
+joblib==1.5.2
+# Research only (never needed inside a submission)
+httpx
+google-genai

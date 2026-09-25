@@ -1,0 +1,16 @@
+{
+  "epidemic": [[80, {}], [50, {"school_closure": 1.0}], [50, {}], [50, {"mask_mandate": 1.0}], [50, {}], [50, {"vaccination_rate": 0.003}], [70, {}]],
+  "market": [[100, {}], [100, {"interest_rate": 0.1}], [200, {}], [100, {"transaction_tax": 0.05}], [200, {}]],
+  "power_grid": [[50, {"price_signal": 0.8}], [100, {"price_signal": 0.0}], [250, {}], [100, {"reserve_dispatch": 150.0}], [50, {}], [100, {"interconnector": 0.2}], [50, {}]],
+  "wildlife": [[60, {}], [60, {"hunting_quota": 7.0}], [80, {}], [60, {"habitat_protection": 0.1}], [80, {}], [60, {"corridor_access": 1.0}], [80, {}]],
+  "reservoir.release": [[90, {"release_rate": 12.0}]],
+  "reservoir.irrigation": [[90, {"irrigation_allocation": 8.0}]],
+  "reservoir.depth": [[90, {"withdrawal_depth": 1.0}]],
+  "reservoir.aeration": [[90, {"aeration": 0.0}]],
+  "ad_auction": [[100, {}], [60, {"targeting_breadth": 0.775}], [80, {}], [60, {"bid": 5.0}], [80, {}], [60, {"bid": 5.0, "budget_cap": 100.0}]],
+  "social_contagion": [[30, {}], [70, {"seeding": 9.0}], [60, {}], [70, {"incentive": 2.0}], [60, {}], [70, {"seeding": 9.0, "bridge_outreach": 0.6}], [60, {}]],
+  "hospital_queue.staffing": [[20, {}], [50, {"staffing": 15.0}], [80, {}]],
+  "hospital_queue.overtime": [[20, {}], [50, {"overtime": 1.0}], [80, {}]],
+  "hospital_queue.followup": [[20, {}], [50, {"followup_capacity": 0.0}], [80, {}]],
+  "hospital_queue.mix": [[20, {}], [40, {"diagnostic_allocation": 0.75}], [50, {}], [40, {"elective_scheduling": 20.0}], [50, {}], [40, {"urgent_priority": 1.0}], [50, {}]]
+}

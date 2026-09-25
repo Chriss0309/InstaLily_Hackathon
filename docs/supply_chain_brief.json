@@ -1,0 +1,108 @@
+{
+  "system_id": "supply_chain",
+  "brief": "Arrivals at the retailer plus total supplier and retail stock. Supplier goods have two classes; product mix selects new production and requested dispatch, without rewriting old batches. Orders withdraw only available stock. Production effort releases material and operates the primary line; receiving effort staffs the final terminal. Rush handling bypasses treatment for new primary-line departures, while the second class normally follows its own intake. Conveyors retain their destination and travel commitment after a rush change. The two intakes share forward transport; the second intake and treatment share cooling, while the primary intake, receiving and maintenance share drive service. Maintenance restores treatment activity but takes utility and productive treatment time. Goods needing rework may return to the primary intake; return-space overflow leaves as secondary-grade goods counted in shipments. Congested transport and rework, machine heat/wear, and adaptive production commitments are three possible memory mechanisms; exactly two apply. Hold product mix fixed when comparing maintenance with an idle pause; compare rush changes before and after dispatch, or equal orders in opposite production sequences. Internal buffers and conveyors start empty; the initial stocks split into fixed class shares. Intervention bounds: order_quantity [0.0, 80.0], lead_time_buy [0.0, 1.0], product_mix [0.0, 1.0], production_effort [0.0, 1.5], receiving_effort [0.0, 1.5], maintenance [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"lead_time_buy\": 1.0, \"maintenance\": 1.0, \"order_quantity\": 0.0, \"product_mix\": 0.5, \"production_effort\": 1.0, \"receiving_effort\": 1.5}. Reference pulse action: {\"lead_time_buy\": 0.2, \"maintenance\": 0.0, \"order_quantity\": 80.0, \"product_mix\": 0.8, \"production_effort\": 1.5, \"receiving_effort\": 0.35}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "shipments",
+    "inventory_supplier",
+    "inventory_retail"
+  ],
+  "interventions": {
+    "order_quantity": [
+      0.0,
+      80.0
+    ],
+    "lead_time_buy": [
+      0.0,
+      1.0
+    ],
+    "product_mix": [
+      0.0,
+      1.0
+    ],
+    "production_effort": [
+      0.0,
+      1.5
+    ],
+    "receiving_effort": [
+      0.0,
+      1.5
+    ],
+    "maintenance": [
+      0.0,
+      1.0
+    ]
+  },
+  "documents": [
+    {
+      "id": "supply_chain-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "supply_chain-initialization",
+      "title": "Reset and initial observations",
+      "text": "Arrivals at the retailer plus total supplier and retail stock. Supplier goods have two classes; product mix selects new production and requested dispatch, without rewriting old batches. Orders withdraw only available stock. Production effort releases material and operates the primary line; receiving effort staffs the final terminal. Rush handling bypasses treatment for new primary-line departures, while the second class normally follows its own intake. Conveyors retain their destination and travel commitment after a rush change. The two intakes share forward transport; the second intake and treatment share cooling, while the primary intake, receiving and maintenance share drive service. Maintenance restores treatment activity but takes utility and productive treatment time. Goods needing rework may return to the primary intake; return-space overflow leaves as secondary-grade goods counted in shipments. Congested transport and rework, machine heat/wear, and adaptive production commitments are three possible memory mechanisms; exactly two apply. Hold product mix fixed when comparing maintenance with an idle pause; compare rush changes before and after dispatch, or equal orders in opposite production sequences. Internal buffers and conveyors start empty; the initial stocks split into fixed class shares.\nA reset samples only the initial physical observable values from these ranges: {\"inventory_retail\": [80.0, 120.0], \"inventory_supplier\": [80.0, 120.0], \"shipments\": [20.0, 35.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "supply_chain-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "supply_chain",
+    "observables": [
+      "shipments",
+      "inventory_supplier",
+      "inventory_retail"
+    ],
+    "intervention_bounds": {
+      "order_quantity": [
+        0.0,
+        80.0
+      ],
+      "lead_time_buy": [
+        0.0,
+        1.0
+      ],
+      "product_mix": [
+        0.0,
+        1.0
+      ],
+      "production_effort": [
+        0.0,
+        1.5
+      ],
+      "receiving_effort": [
+        0.0,
+        1.5
+      ],
+      "maintenance": [
+        0.0,
+        1.0
+      ]
+    },
+    "brief": "Arrivals at the retailer plus total supplier and retail stock. Supplier goods have two classes; product mix selects new production and requested dispatch, without rewriting old batches. Orders withdraw only available stock. Production effort releases material and operates the primary line; receiving effort staffs the final terminal. Rush handling bypasses treatment for new primary-line departures, while the second class normally follows its own intake. Conveyors retain their destination and travel commitment after a rush change. The two intakes share forward transport; the second intake and treatment share cooling, while the primary intake, receiving and maintenance share drive service. Maintenance restores treatment activity but takes utility and productive treatment time. Goods needing rework may return to the primary intake; return-space overflow leaves as secondary-grade goods counted in shipments. Congested transport and rework, machine heat/wear, and adaptive production commitments are three possible memory mechanisms; exactly two apply. Hold product mix fixed when comparing maintenance with an idle pause; compare rush changes before and after dispatch, or equal orders in opposite production sequences. Internal buffers and conveyors start empty; the initial stocks split into fixed class shares. Intervention bounds: order_quantity [0.0, 80.0], lead_time_buy [0.0, 1.0], product_mix [0.0, 1.0], production_effort [0.0, 1.5], receiving_effort [0.0, 1.5], maintenance [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"lead_time_buy\": 1.0, \"maintenance\": 1.0, \"order_quantity\": 0.0, \"product_mix\": 0.5, \"production_effort\": 1.0, \"receiving_effort\": 1.5}. Reference pulse action: {\"lead_time_buy\": 0.2, \"maintenance\": 0.0, \"order_quantity\": 80.0, \"product_mix\": 0.8, \"production_effort\": 1.5, \"receiving_effort\": 0.35}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "supply_chain-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "supply_chain-initialization",
+        "title": "Reset and initial observations",
+        "text": "Arrivals at the retailer plus total supplier and retail stock. Supplier goods have two classes; product mix selects new production and requested dispatch, without rewriting old batches. Orders withdraw only available stock. Production effort releases material and operates the primary line; receiving effort staffs the final terminal. Rush handling bypasses treatment for new primary-line departures, while the second class normally follows its own intake. Conveyors retain their destination and travel commitment after a rush change. The two intakes share forward transport; the second intake and treatment share cooling, while the primary intake, receiving and maintenance share drive service. Maintenance restores treatment activity but takes utility and productive treatment time. Goods needing rework may return to the primary intake; return-space overflow leaves as secondary-grade goods counted in shipments. Congested transport and rework, machine heat/wear, and adaptive production commitments are three possible memory mechanisms; exactly two apply. Hold product mix fixed when comparing maintenance with an idle pause; compare rush changes before and after dispatch, or equal orders in opposite production sequences. Internal buffers and conveyors start empty; the initial stocks split into fixed class shares.\nA reset samples only the initial physical observable values from these ranges: {\"inventory_retail\": [80.0, 120.0], \"inventory_supplier\": [80.0, 120.0], \"shipments\": [20.0, 35.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "supply_chain-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

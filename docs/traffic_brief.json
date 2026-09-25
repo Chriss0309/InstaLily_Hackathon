@@ -1,0 +1,110 @@
+{
+  "system_id": "traffic",
+  "brief": "Observe terminal flows and mean speeds on two routes. Light and heavy vehicles retain their route, class and crossing commitments after entry. Toll changes the arriving mix; ramp metering changes admitted demand. Signal timing divides new crossing admissions, freight priority changes which waiting class gets service, and clearance effort shifts a shared crew from intersection operation toward downstream exits. Vehicles already crossing keep occupying the shared junction until their committed work finishes and exit space opens. Thus one route can obstruct the other even under unchanged signals. Lane closure affects different sections unequally. Finite approach, junction and exit buffers reject excess arrivals; waiting approach drivers may divert. Route learning, crew fatigue/switching costs and persistent spillback fronts are three possible mechanisms; exactly two apply. Compare toll and ramp preparations with similar totals to change vehicle mix; compare clearance with a signal reversal after stopping arrivals. Reported speed combines observed completed journey times with current stopped and moving class mix; equal route totals can therefore report different speeds. Roads and crossings start empty. Intervention bounds: signal_timing [0.1, 0.9], lane_closure [0.0, 0.75], toll [0.0, 5.0], ramp_metering [0.0, 1.0], freight_priority [0.0, 1.0], clearance_effort [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"clearance_effort\": 1.0, \"freight_priority\": 0.5, \"lane_closure\": 0.0, \"ramp_metering\": 0.0, \"signal_timing\": 0.5, \"toll\": 5.0}. Reference pulse action: {\"clearance_effort\": 0.0, \"freight_priority\": 1.0, \"lane_closure\": 0.65, \"ramp_metering\": 1.0, \"signal_timing\": 0.15, \"toll\": 0.0}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "flow_a",
+    "flow_b",
+    "speed_a",
+    "speed_b"
+  ],
+  "interventions": {
+    "signal_timing": [
+      0.1,
+      0.9
+    ],
+    "lane_closure": [
+      0.0,
+      0.75
+    ],
+    "toll": [
+      0.0,
+      5.0
+    ],
+    "ramp_metering": [
+      0.0,
+      1.0
+    ],
+    "freight_priority": [
+      0.0,
+      1.0
+    ],
+    "clearance_effort": [
+      0.0,
+      1.0
+    ]
+  },
+  "documents": [
+    {
+      "id": "traffic-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "traffic-initialization",
+      "title": "Reset and initial observations",
+      "text": "Observe terminal flows and mean speeds on two routes. Light and heavy vehicles retain their route, class and crossing commitments after entry. Toll changes the arriving mix; ramp metering changes admitted demand. Signal timing divides new crossing admissions, freight priority changes which waiting class gets service, and clearance effort shifts a shared crew from intersection operation toward downstream exits. Vehicles already crossing keep occupying the shared junction until their committed work finishes and exit space opens. Thus one route can obstruct the other even under unchanged signals. Lane closure affects different sections unequally. Finite approach, junction and exit buffers reject excess arrivals; waiting approach drivers may divert. Route learning, crew fatigue/switching costs and persistent spillback fronts are three possible mechanisms; exactly two apply. Compare toll and ramp preparations with similar totals to change vehicle mix; compare clearance with a signal reversal after stopping arrivals. Reported speed combines observed completed journey times with current stopped and moving class mix; equal route totals can therefore report different speeds. Roads and crossings start empty.\nA reset samples only the initial physical observable values from these ranges: {\"flow_a\": [30.0, 45.0], \"flow_b\": [30.0, 45.0], \"speed_a\": [30.0, 45.0], \"speed_b\": [30.0, 45.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "traffic-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "traffic",
+    "observables": [
+      "flow_a",
+      "flow_b",
+      "speed_a",
+      "speed_b"
+    ],
+    "intervention_bounds": {
+      "signal_timing": [
+        0.1,
+        0.9
+      ],
+      "lane_closure": [
+        0.0,
+        0.75
+      ],
+      "toll": [
+        0.0,
+        5.0
+      ],
+      "ramp_metering": [
+        0.0,
+        1.0
+      ],
+      "freight_priority": [
+        0.0,
+        1.0
+      ],
+      "clearance_effort": [
+        0.0,
+        1.0
+      ]
+    },
+    "brief": "Observe terminal flows and mean speeds on two routes. Light and heavy vehicles retain their route, class and crossing commitments after entry. Toll changes the arriving mix; ramp metering changes admitted demand. Signal timing divides new crossing admissions, freight priority changes which waiting class gets service, and clearance effort shifts a shared crew from intersection operation toward downstream exits. Vehicles already crossing keep occupying the shared junction until their committed work finishes and exit space opens. Thus one route can obstruct the other even under unchanged signals. Lane closure affects different sections unequally. Finite approach, junction and exit buffers reject excess arrivals; waiting approach drivers may divert. Route learning, crew fatigue/switching costs and persistent spillback fronts are three possible mechanisms; exactly two apply. Compare toll and ramp preparations with similar totals to change vehicle mix; compare clearance with a signal reversal after stopping arrivals. Reported speed combines observed completed journey times with current stopped and moving class mix; equal route totals can therefore report different speeds. Roads and crossings start empty. Intervention bounds: signal_timing [0.1, 0.9], lane_closure [0.0, 0.75], toll [0.0, 5.0], ramp_metering [0.0, 1.0], freight_priority [0.0, 1.0], clearance_effort [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"clearance_effort\": 1.0, \"freight_priority\": 0.5, \"lane_closure\": 0.0, \"ramp_metering\": 0.0, \"signal_timing\": 0.5, \"toll\": 5.0}. Reference pulse action: {\"clearance_effort\": 0.0, \"freight_priority\": 1.0, \"lane_closure\": 0.65, \"ramp_metering\": 1.0, \"signal_timing\": 0.15, \"toll\": 0.0}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "traffic-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "traffic-initialization",
+        "title": "Reset and initial observations",
+        "text": "Observe terminal flows and mean speeds on two routes. Light and heavy vehicles retain their route, class and crossing commitments after entry. Toll changes the arriving mix; ramp metering changes admitted demand. Signal timing divides new crossing admissions, freight priority changes which waiting class gets service, and clearance effort shifts a shared crew from intersection operation toward downstream exits. Vehicles already crossing keep occupying the shared junction until their committed work finishes and exit space opens. Thus one route can obstruct the other even under unchanged signals. Lane closure affects different sections unequally. Finite approach, junction and exit buffers reject excess arrivals; waiting approach drivers may divert. Route learning, crew fatigue/switching costs and persistent spillback fronts are three possible mechanisms; exactly two apply. Compare toll and ramp preparations with similar totals to change vehicle mix; compare clearance with a signal reversal after stopping arrivals. Reported speed combines observed completed journey times with current stopped and moving class mix; equal route totals can therefore report different speeds. Roads and crossings start empty.\nA reset samples only the initial physical observable values from these ranges: {\"flow_a\": [30.0, 45.0], \"flow_b\": [30.0, 45.0], \"speed_a\": [30.0, 45.0], \"speed_b\": [30.0, 45.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "traffic-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

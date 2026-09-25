@@ -1,0 +1,82 @@
+{
+  "system_id": "social_contagion",
+  "brief": "Observe adopter totals in two communities. Seeding funds outreach, incentive changes the offer, and bridge outreach allocates effort between local recruitment and introductions across communities. Relationship-led, incentive-led and deliberative audiences mix differently. Interested people must complete onboarding through a workforce also needed by existing members; promises accompany waiting cohorts. Disappointed former members need time before reconsidering. Credibility, incentive expectations and cross-community relationships can retain history. Compare local versus bridge campaigns, incentive before versus after recruitment, and recovery with new outreach stopped. Initial members have a fixed disclosed-style community mix and no paid promises; other queues begin empty. Intervention bounds: seeding [0.0, 10.0], incentive [0.0, 2.0], bridge_outreach [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"bridge_outreach\": 0.0, \"incentive\": 0.0, \"seeding\": 0.0}. Reference pulse action: {\"bridge_outreach\": 0.6, \"incentive\": 2.0, \"seeding\": 9.0}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "adopters_a",
+    "adopters_b"
+  ],
+  "interventions": {
+    "seeding": [
+      0.0,
+      10.0
+    ],
+    "incentive": [
+      0.0,
+      2.0
+    ],
+    "bridge_outreach": [
+      0.0,
+      1.0
+    ]
+  },
+  "documents": [
+    {
+      "id": "social_contagion-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "social_contagion-initialization",
+      "title": "Reset and initial observations",
+      "text": "Observe adopter totals in two communities. Seeding funds outreach, incentive changes the offer, and bridge outreach allocates effort between local recruitment and introductions across communities. Relationship-led, incentive-led and deliberative audiences mix differently. Interested people must complete onboarding through a workforce also needed by existing members; promises accompany waiting cohorts. Disappointed former members need time before reconsidering. Credibility, incentive expectations and cross-community relationships can retain history. Compare local versus bridge campaigns, incentive before versus after recruitment, and recovery with new outreach stopped. Initial members have a fixed disclosed-style community mix and no paid promises; other queues begin empty.\nA reset samples only the initial physical observable values from these ranges: {\"adopters_a\": [30.0, 70.0], \"adopters_b\": [20.0, 55.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "social_contagion-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "social_contagion",
+    "observables": [
+      "adopters_a",
+      "adopters_b"
+    ],
+    "intervention_bounds": {
+      "seeding": [
+        0.0,
+        10.0
+      ],
+      "incentive": [
+        0.0,
+        2.0
+      ],
+      "bridge_outreach": [
+        0.0,
+        1.0
+      ]
+    },
+    "brief": "Observe adopter totals in two communities. Seeding funds outreach, incentive changes the offer, and bridge outreach allocates effort between local recruitment and introductions across communities. Relationship-led, incentive-led and deliberative audiences mix differently. Interested people must complete onboarding through a workforce also needed by existing members; promises accompany waiting cohorts. Disappointed former members need time before reconsidering. Credibility, incentive expectations and cross-community relationships can retain history. Compare local versus bridge campaigns, incentive before versus after recruitment, and recovery with new outreach stopped. Initial members have a fixed disclosed-style community mix and no paid promises; other queues begin empty. Intervention bounds: seeding [0.0, 10.0], incentive [0.0, 2.0], bridge_outreach [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"bridge_outreach\": 0.0, \"incentive\": 0.0, \"seeding\": 0.0}. Reference pulse action: {\"bridge_outreach\": 0.6, \"incentive\": 2.0, \"seeding\": 9.0}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "social_contagion-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "social_contagion-initialization",
+        "title": "Reset and initial observations",
+        "text": "Observe adopter totals in two communities. Seeding funds outreach, incentive changes the offer, and bridge outreach allocates effort between local recruitment and introductions across communities. Relationship-led, incentive-led and deliberative audiences mix differently. Interested people must complete onboarding through a workforce also needed by existing members; promises accompany waiting cohorts. Disappointed former members need time before reconsidering. Credibility, incentive expectations and cross-community relationships can retain history. Compare local versus bridge campaigns, incentive before versus after recruitment, and recovery with new outreach stopped. Initial members have a fixed disclosed-style community mix and no paid promises; other queues begin empty.\nA reset samples only the initial physical observable values from these ranges: {\"adopters_a\": [30.0, 70.0], \"adopters_b\": [20.0, 55.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "social_contagion-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

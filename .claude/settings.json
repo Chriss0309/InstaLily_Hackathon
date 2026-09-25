@@ -1,0 +1,15 @@
+{
+    "permissions": {
+      "deny": [
+        "Read(./secrets/**)",
+        "Edit(./secrets/**)",
+        "Write(./secrets/**)"
+      ],
+      "ask": [
+        "Bash(python collect_runs.py:*)",
+        "Bash(python kit/collect.py:*)",
+        "Bash(.venv/Scripts/python collect_runs.py:*)",
+        "Bash(.venv/Scripts/python.exe collect_runs.py:*)"
+      ]
+    }
+  }

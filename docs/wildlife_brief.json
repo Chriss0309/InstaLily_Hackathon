@@ -1,0 +1,86 @@
+{
+  "system_id": "wildlife",
+  "brief": "Observe prey and predator totals in northern and southern landscapes. Hunting requests prey harvest; habitat protection changes shelter and resource renewal, especially in the north. Corridor access controls new interregional journeys; already travelling animals can still arrive. Within each region, open pasture, mixed cover and sheltered browse differ in feeding, hunting exposure and predation. Food renewal shares a finite resource, young animals compete for nursery food, and arrivals compete for settlement space. Compare habitat recovery with corridors closed and open, and harvest before versus after protection. Regional totals alone do not identify patch occupancy, juvenile condition or animals in transit. Intervention bounds: hunting_quota [0.0, 8.0], habitat_protection [0.0, 1.0], corridor_access [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"corridor_access\": 0.0, \"habitat_protection\": 1.0, \"hunting_quota\": 0.0}. Reference pulse action: {\"corridor_access\": 1.0, \"habitat_protection\": 0.1, \"hunting_quota\": 7.0}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "prey_north",
+    "predator_north",
+    "prey_south",
+    "predator_south"
+  ],
+  "interventions": {
+    "hunting_quota": [
+      0.0,
+      8.0
+    ],
+    "habitat_protection": [
+      0.0,
+      1.0
+    ],
+    "corridor_access": [
+      0.0,
+      1.0
+    ]
+  },
+  "documents": [
+    {
+      "id": "wildlife-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "wildlife-initialization",
+      "title": "Reset and initial observations",
+      "text": "Observe prey and predator totals in northern and southern landscapes. Hunting requests prey harvest; habitat protection changes shelter and resource renewal, especially in the north. Corridor access controls new interregional journeys; already travelling animals can still arrive. Within each region, open pasture, mixed cover and sheltered browse differ in feeding, hunting exposure and predation. Food renewal shares a finite resource, young animals compete for nursery food, and arrivals compete for settlement space. Compare habitat recovery with corridors closed and open, and harvest before versus after protection. Regional totals alone do not identify patch occupancy, juvenile condition or animals in transit.\nA reset samples only the initial physical observable values from these ranges: {\"predator_north\": [8.0, 15.0], \"predator_south\": [8.0, 15.0], \"prey_north\": [70.0, 100.0], \"prey_south\": [70.0, 100.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "wildlife-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "wildlife",
+    "observables": [
+      "prey_north",
+      "predator_north",
+      "prey_south",
+      "predator_south"
+    ],
+    "intervention_bounds": {
+      "hunting_quota": [
+        0.0,
+        8.0
+      ],
+      "habitat_protection": [
+        0.0,
+        1.0
+      ],
+      "corridor_access": [
+        0.0,
+        1.0
+      ]
+    },
+    "brief": "Observe prey and predator totals in northern and southern landscapes. Hunting requests prey harvest; habitat protection changes shelter and resource renewal, especially in the north. Corridor access controls new interregional journeys; already travelling animals can still arrive. Within each region, open pasture, mixed cover and sheltered browse differ in feeding, hunting exposure and predation. Food renewal shares a finite resource, young animals compete for nursery food, and arrivals compete for settlement space. Compare habitat recovery with corridors closed and open, and harvest before versus after protection. Regional totals alone do not identify patch occupancy, juvenile condition or animals in transit. Intervention bounds: hunting_quota [0.0, 8.0], habitat_protection [0.0, 1.0], corridor_access [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"corridor_access\": 0.0, \"habitat_protection\": 1.0, \"hunting_quota\": 0.0}. Reference pulse action: {\"corridor_access\": 1.0, \"habitat_protection\": 0.1, \"hunting_quota\": 7.0}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "wildlife-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "wildlife-initialization",
+        "title": "Reset and initial observations",
+        "text": "Observe prey and predator totals in northern and southern landscapes. Hunting requests prey harvest; habitat protection changes shelter and resource renewal, especially in the north. Corridor access controls new interregional journeys; already travelling animals can still arrive. Within each region, open pasture, mixed cover and sheltered browse differ in feeding, hunting exposure and predation. Food renewal shares a finite resource, young animals compete for nursery food, and arrivals compete for settlement space. Compare habitat recovery with corridors closed and open, and harvest before versus after protection. Regional totals alone do not identify patch occupancy, juvenile condition or animals in transit.\nA reset samples only the initial physical observable values from these ranges: {\"predator_north\": [8.0, 15.0], \"predator_south\": [8.0, 15.0], \"prey_north\": [70.0, 100.0], \"prey_south\": [70.0, 100.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "wildlife-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

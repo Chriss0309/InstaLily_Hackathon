@@ -1,0 +1,82 @@
+{
+  "system_id": "epidemic",
+  "brief": "Daily infection onsets and occupied hospital beds in three interacting age groups. School closure changes where contacts occur; masks reduce exposure; vaccination uses a shared clinic workforce. Age groups differ in contacts, severity and recovery. Clinical referrals can wait for beds, and hospital pressure reduces clinic availability. Behavior, developing immunity and postponed gatherings may retain intervention history. Compare closure with masking at similar case counts, and vaccination before versus after a restriction pulse; follow both cases and hospital recovery. Unobserved resident compartments start in a fixed age mix determined by the observed initial cases; waiting lists and intervention histories start empty. Intervention bounds: school_closure [0.0, 1.0], mask_mandate [0.0, 1.0], vaccination_rate [0.0, 0.003]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"mask_mandate\": 0.0, \"school_closure\": 0.0, \"vaccination_rate\": 0.0}. Reference pulse action: {\"mask_mandate\": 1.0, \"school_closure\": 1.0, \"vaccination_rate\": 0.003}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "daily_cases",
+    "hospital_load"
+  ],
+  "interventions": {
+    "school_closure": [
+      0.0,
+      1.0
+    ],
+    "mask_mandate": [
+      0.0,
+      1.0
+    ],
+    "vaccination_rate": [
+      0.0,
+      0.003
+    ]
+  },
+  "documents": [
+    {
+      "id": "epidemic-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "epidemic-initialization",
+      "title": "Reset and initial observations",
+      "text": "Daily infection onsets and occupied hospital beds in three interacting age groups. School closure changes where contacts occur; masks reduce exposure; vaccination uses a shared clinic workforce. Age groups differ in contacts, severity and recovery. Clinical referrals can wait for beds, and hospital pressure reduces clinic availability. Behavior, developing immunity and postponed gatherings may retain intervention history. Compare closure with masking at similar case counts, and vaccination before versus after a restriction pulse; follow both cases and hospital recovery. Unobserved resident compartments start in a fixed age mix determined by the observed initial cases; waiting lists and intervention histories start empty.\nA reset samples only the initial physical observable values from these ranges: {\"daily_cases\": [100.0, 240.0], \"hospital_load\": [25.0, 65.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "epidemic-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "epidemic",
+    "observables": [
+      "daily_cases",
+      "hospital_load"
+    ],
+    "intervention_bounds": {
+      "school_closure": [
+        0.0,
+        1.0
+      ],
+      "mask_mandate": [
+        0.0,
+        1.0
+      ],
+      "vaccination_rate": [
+        0.0,
+        0.003
+      ]
+    },
+    "brief": "Daily infection onsets and occupied hospital beds in three interacting age groups. School closure changes where contacts occur; masks reduce exposure; vaccination uses a shared clinic workforce. Age groups differ in contacts, severity and recovery. Clinical referrals can wait for beds, and hospital pressure reduces clinic availability. Behavior, developing immunity and postponed gatherings may retain intervention history. Compare closure with masking at similar case counts, and vaccination before versus after a restriction pulse; follow both cases and hospital recovery. Unobserved resident compartments start in a fixed age mix determined by the observed initial cases; waiting lists and intervention histories start empty. Intervention bounds: school_closure [0.0, 1.0], mask_mandate [0.0, 1.0], vaccination_rate [0.0, 0.003]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"mask_mandate\": 0.0, \"school_closure\": 0.0, \"vaccination_rate\": 0.0}. Reference pulse action: {\"mask_mandate\": 1.0, \"school_closure\": 1.0, \"vaccination_rate\": 0.003}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "epidemic-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "epidemic-initialization",
+        "title": "Reset and initial observations",
+        "text": "Daily infection onsets and occupied hospital beds in three interacting age groups. School closure changes where contacts occur; masks reduce exposure; vaccination uses a shared clinic workforce. Age groups differ in contacts, severity and recovery. Clinical referrals can wait for beds, and hospital pressure reduces clinic availability. Behavior, developing immunity and postponed gatherings may retain intervention history. Compare closure with masking at similar case counts, and vaccination before versus after a restriction pulse; follow both cases and hospital recovery. Unobserved resident compartments start in a fixed age mix determined by the observed initial cases; waiting lists and intervention histories start empty.\nA reset samples only the initial physical observable values from these ranges: {\"daily_cases\": [100.0, 240.0], \"hospital_load\": [25.0, 65.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "epidemic-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

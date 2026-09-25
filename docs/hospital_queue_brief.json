@@ -1,0 +1,108 @@
+{
+  "system_id": "hospital_queue",
+  "brief": "Observe estimated wait, patients pending or receiving hospital care, and gross discharges. Routine, urgent and elective cases need different assessment and treatment work. Diagnostic allocation divides shared staff; urgent priority changes new service admissions. Patients already in assessment or treatment retain their work and occupy finite chairs or beds until completion. A completed assessment may hold its chair when the treatment queue is full. Staffing and overtime change work delivered, not completed patient counts directly. Overtime can create later fatigue; team changes can require orientation before staff are fully effective. Follow-up capacity diverts shared staff to a finite outside program that can prevent delayed returns after discharge. Patients waiting can deteriorate or leave; overflow is referred elsewhere rather than stored in an invisible queue. Fatigue, handover and returning case mix are three possible mechanisms; exactly two apply. Compare equal staff-hours with different overtime spacing, change diagnostic allocation at fixed staffing, or add follow-up after the same discharge burst. Initial queue composition is a fixed function of the reported initial count; services and the follow-up program start empty. Intervention bounds: staffing [1.0, 20.0], elective_scheduling [0.0, 20.0], diagnostic_allocation [0.1, 0.8], urgent_priority [0.0, 1.0], overtime [0.0, 1.0], followup_capacity [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"diagnostic_allocation\": 0.4, \"elective_scheduling\": 0.0, \"followup_capacity\": 1.0, \"overtime\": 0.0, \"staffing\": 20.0, \"urgent_priority\": 0.6}. Reference pulse action: {\"diagnostic_allocation\": 0.75, \"elective_scheduling\": 20.0, \"followup_capacity\": 0.0, \"overtime\": 1.0, \"staffing\": 5.0, \"urgent_priority\": 1.0}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "wait_time",
+    "queue",
+    "discharges"
+  ],
+  "interventions": {
+    "staffing": [
+      1.0,
+      20.0
+    ],
+    "elective_scheduling": [
+      0.0,
+      20.0
+    ],
+    "diagnostic_allocation": [
+      0.1,
+      0.8
+    ],
+    "urgent_priority": [
+      0.0,
+      1.0
+    ],
+    "overtime": [
+      0.0,
+      1.0
+    ],
+    "followup_capacity": [
+      0.0,
+      1.0
+    ]
+  },
+  "documents": [
+    {
+      "id": "hospital_queue-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "hospital_queue-initialization",
+      "title": "Reset and initial observations",
+      "text": "Observe estimated wait, patients pending or receiving hospital care, and gross discharges. Routine, urgent and elective cases need different assessment and treatment work. Diagnostic allocation divides shared staff; urgent priority changes new service admissions. Patients already in assessment or treatment retain their work and occupy finite chairs or beds until completion. A completed assessment may hold its chair when the treatment queue is full. Staffing and overtime change work delivered, not completed patient counts directly. Overtime can create later fatigue; team changes can require orientation before staff are fully effective. Follow-up capacity diverts shared staff to a finite outside program that can prevent delayed returns after discharge. Patients waiting can deteriorate or leave; overflow is referred elsewhere rather than stored in an invisible queue. Fatigue, handover and returning case mix are three possible mechanisms; exactly two apply. Compare equal staff-hours with different overtime spacing, change diagnostic allocation at fixed staffing, or add follow-up after the same discharge burst. Initial queue composition is a fixed function of the reported initial count; services and the follow-up program start empty.\nA reset samples only the initial physical observable values from these ranges: {\"discharges\": [8.0, 15.0], \"queue\": [30.0, 70.0], \"wait_time\": [2.0, 5.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "hospital_queue-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "hospital_queue",
+    "observables": [
+      "wait_time",
+      "queue",
+      "discharges"
+    ],
+    "intervention_bounds": {
+      "staffing": [
+        1.0,
+        20.0
+      ],
+      "elective_scheduling": [
+        0.0,
+        20.0
+      ],
+      "diagnostic_allocation": [
+        0.1,
+        0.8
+      ],
+      "urgent_priority": [
+        0.0,
+        1.0
+      ],
+      "overtime": [
+        0.0,
+        1.0
+      ],
+      "followup_capacity": [
+        0.0,
+        1.0
+      ]
+    },
+    "brief": "Observe estimated wait, patients pending or receiving hospital care, and gross discharges. Routine, urgent and elective cases need different assessment and treatment work. Diagnostic allocation divides shared staff; urgent priority changes new service admissions. Patients already in assessment or treatment retain their work and occupy finite chairs or beds until completion. A completed assessment may hold its chair when the treatment queue is full. Staffing and overtime change work delivered, not completed patient counts directly. Overtime can create later fatigue; team changes can require orientation before staff are fully effective. Follow-up capacity diverts shared staff to a finite outside program that can prevent delayed returns after discharge. Patients waiting can deteriorate or leave; overflow is referred elsewhere rather than stored in an invisible queue. Fatigue, handover and returning case mix are three possible mechanisms; exactly two apply. Compare equal staff-hours with different overtime spacing, change diagnostic allocation at fixed staffing, or add follow-up after the same discharge burst. Initial queue composition is a fixed function of the reported initial count; services and the follow-up program start empty. Intervention bounds: staffing [1.0, 20.0], elective_scheduling [0.0, 20.0], diagnostic_allocation [0.1, 0.8], urgent_priority [0.0, 1.0], overtime [0.0, 1.0], followup_capacity [0.0, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"diagnostic_allocation\": 0.4, \"elective_scheduling\": 0.0, \"followup_capacity\": 1.0, \"overtime\": 0.0, \"staffing\": 20.0, \"urgent_priority\": 0.6}. Reference pulse action: {\"diagnostic_allocation\": 0.75, \"elective_scheduling\": 20.0, \"followup_capacity\": 0.0, \"overtime\": 1.0, \"staffing\": 5.0, \"urgent_priority\": 1.0}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "hospital_queue-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "hospital_queue-initialization",
+        "title": "Reset and initial observations",
+        "text": "Observe estimated wait, patients pending or receiving hospital care, and gross discharges. Routine, urgent and elective cases need different assessment and treatment work. Diagnostic allocation divides shared staff; urgent priority changes new service admissions. Patients already in assessment or treatment retain their work and occupy finite chairs or beds until completion. A completed assessment may hold its chair when the treatment queue is full. Staffing and overtime change work delivered, not completed patient counts directly. Overtime can create later fatigue; team changes can require orientation before staff are fully effective. Follow-up capacity diverts shared staff to a finite outside program that can prevent delayed returns after discharge. Patients waiting can deteriorate or leave; overflow is referred elsewhere rather than stored in an invisible queue. Fatigue, handover and returning case mix are three possible mechanisms; exactly two apply. Compare equal staff-hours with different overtime spacing, change diagnostic allocation at fixed staffing, or add follow-up after the same discharge burst. Initial queue composition is a fixed function of the reported initial count; services and the follow-up program start empty.\nA reset samples only the initial physical observable values from these ranges: {\"discharges\": [8.0, 15.0], \"queue\": [30.0, 70.0], \"wait_time\": [2.0, 5.0]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "hospital_queue-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

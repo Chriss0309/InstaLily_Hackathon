@@ -1,0 +1,84 @@
+{
+  "system_id": "ad_auction",
+  "brief": "Observe auction win fraction, spend and completed conversions. Choose bid, per-tick budget and targeting breadth. Broader targeting contains narrower audiences, whose members can be in different stages of attention and purchase. A won impression is not necessarily an immediate conversion: started purchases remain committed and compete for limited fulfillment work. Different audiences require different amounts of fulfillment work. Converted customers take time to become available again. Rival campaigns may move a shared pool of capital between audiences, repeated exposure may temporarily remove reachable people, and broad introduction may change the effect of later follow-up. Equal spending can therefore leave different future opportunities. Initial reports are the only random initial state; hidden populations and commitments begin from the same reference conditions on every reset: people are available and unprepared, with no pending purchases or exposure recovery. Intervention bounds: bid [0.0, 5.0], budget_cap [0.0, 100.0], targeting_breadth [0.1, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"bid\": 1.5, \"budget_cap\": 20.0, \"targeting_breadth\": 0.55}. Reference pulse action: {\"bid\": 5.0, \"budget_cap\": 100.0, \"targeting_breadth\": 0.775}. Recovery takes paid steps; it is not a reset.",
+  "observables": [
+    "win_rate",
+    "spend",
+    "conversions"
+  ],
+  "interventions": {
+    "bid": [
+      0.0,
+      5.0
+    ],
+    "budget_cap": [
+      0.0,
+      100.0
+    ],
+    "targeting_breadth": [
+      0.1,
+      1.0
+    ]
+  },
+  "documents": [
+    {
+      "id": "ad_auction-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "ad_auction-initialization",
+      "title": "Reset and initial observations",
+      "text": "Observe auction win fraction, spend and completed conversions. Choose bid, per-tick budget and targeting breadth. Broader targeting contains narrower audiences, whose members can be in different stages of attention and purchase. A won impression is not necessarily an immediate conversion: started purchases remain committed and compete for limited fulfillment work. Different audiences require different amounts of fulfillment work. Converted customers take time to become available again. Rival campaigns may move a shared pool of capital between audiences, repeated exposure may temporarily remove reachable people, and broad introduction may change the effect of later follow-up. Equal spending can therefore leave different future opportunities. Initial reports are the only random initial state; hidden populations and commitments begin from the same reference conditions on every reset: people are available and unprepared, with no pending purchases or exposure recovery.\nA reset samples only the initial physical observable values from these ranges: {\"conversions\": [0.4, 1.5], \"spend\": [10.0, 30.0], \"win_rate\": [0.25, 0.5]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "ad_auction-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ],
+  "forecast_context": {
+    "protocol": "forecaster-v1",
+    "revision": "research-forecast-v8",
+    "family": "ad_auction",
+    "observables": [
+      "win_rate",
+      "spend",
+      "conversions"
+    ],
+    "intervention_bounds": {
+      "bid": [
+        0.0,
+        5.0
+      ],
+      "budget_cap": [
+        0.0,
+        100.0
+      ],
+      "targeting_breadth": [
+        0.1,
+        1.0
+      ]
+    },
+    "brief": "Observe auction win fraction, spend and completed conversions. Choose bid, per-tick budget and targeting breadth. Broader targeting contains narrower audiences, whose members can be in different stages of attention and purchase. A won impression is not necessarily an immediate conversion: started purchases remain committed and compete for limited fulfillment work. Different audiences require different amounts of fulfillment work. Converted customers take time to become available again. Rival campaigns may move a shared pool of capital between audiences, repeated exposure may temporarily remove reachable people, and broad introduction may change the effect of later follow-up. Equal spending can therefore leave different future opportunities. Initial reports are the only random initial state; hidden populations and commitments begin from the same reference conditions on every reset: people are available and unprepared, with no pending purchases or exposure recovery. Intervention bounds: bid [0.0, 5.0], budget_cap [0.0, 100.0], targeting_breadth [0.1, 1.0]. These bounds also apply to forecast schedules. Reset randomizes only the listed observables. All unobserved quantities begin from fixed reference conditions, identical on every reset. There is no random prehistory. Internal variables and their equations are not disclosed. Reference recovery action: {\"bid\": 1.5, \"budget_cap\": 20.0, \"targeting_breadth\": 0.55}. Reference pulse action: {\"bid\": 5.0, \"budget_cap\": 100.0, \"targeting_breadth\": 0.775}. Recovery takes paid steps; it is not a reset.",
+    "documents": [
+      {
+        "id": "ad_auction-operations",
+        "title": "Physical operating interface",
+        "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+      },
+      {
+        "id": "ad_auction-initialization",
+        "title": "Reset and initial observations",
+        "text": "Observe auction win fraction, spend and completed conversions. Choose bid, per-tick budget and targeting breadth. Broader targeting contains narrower audiences, whose members can be in different stages of attention and purchase. A won impression is not necessarily an immediate conversion: started purchases remain committed and compete for limited fulfillment work. Different audiences require different amounts of fulfillment work. Converted customers take time to become available again. Rival campaigns may move a shared pool of capital between audiences, repeated exposure may temporarily remove reachable people, and broad introduction may change the effect of later follow-up. Equal spending can therefore leave different future opportunities. Initial reports are the only random initial state; hidden populations and commitments begin from the same reference conditions on every reset: people are available and unprepared, with no pending purchases or exposure recovery.\nA reset samples only the initial physical observable values from these ranges: {\"conversions\": [0.4, 1.5], \"spend\": [10.0, 30.0], \"win_rate\": [0.25, 0.5]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+      },
+      {
+        "id": "ad_auction-research-and-forecasting",
+        "title": "What remains fixed",
+        "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+      }
+    ]
+  },
+  "revision": "research-forecast-v8",
+  "shared_physics_across_teams_and_phases": true
+}

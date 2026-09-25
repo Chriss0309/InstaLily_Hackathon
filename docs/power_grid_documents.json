@@ -1,0 +1,20 @@
+{
+  "system_id": "power_grid",
+  "documents": [
+    {
+      "id": "power_grid-operations",
+      "title": "Physical operating interface",
+      "text": "Every action names all controls using the physical units and bounds in the brief. There is no hidden translation controller. Controls act on the evolving state; the same action can have different effects after different histories. All observations and required forecasts use the observable names and physical units listed in the brief. Measurement noise is present in research observations; forecasts are scored against the underlying noiseless physical observables."
+    },
+    {
+      "id": "power_grid-initialization",
+      "title": "Reset and initial observations",
+      "text": "Grid load in power units, frequency in Hz, and renewable share of delivered generation. Price signal reduces desired demand; reserve dispatch requests additional supply in power units. A tick is one dispatch interval. Supply requests can be limited by available physical resources. Reserve resources differ in power, duration and thermal response, and share a charging connection. Dispatch allocates supply according to operating cost and system conditions. Flexible cooling loads have different thermal response times. Price shifts their thermostat settings: each load warms while off, cools while on, and switches at separate upper and lower temperature limits. Aggregate consumption depends on the distribution of temperatures and which loads are already running. A price pulse can synchronize some loads and cause a later rebound; thermal heterogeneity disperses that synchronization. Every reset starts with the same asynchronous population at reference price 0.8, without random hidden phases. Charging allowance limits grid power available for refilling reserves. Interconnector setting opens remote delivery capacity, whose temperature depends on recent flows. Renewables can be curtailed at that connection. Conventional governors respond to frequency with finite response times and output limits.\nA reset samples only the initial physical observable values from these ranges: {\"frequency\": [49.8, 50.2], \"load\": [90.0, 120.0], \"renewable_share\": [0.2, 0.4]}. Initial reported measurements include the same observation-noise process used during research. Unobserved memory always starts from the same fixed reference rule described in the brief, including any deterministic dependence on the initial observable state. There is no random prehistory. Public and final hidden episodes use this same reset rule."
+    },
+    {
+      "id": "power_grid-research-and-forecasting",
+      "title": "What remains fixed",
+      "text": "Every team investigates the same underlying physical parameters and active mechanisms for this system. Those exact parameters and mechanisms are used for public and final evaluation. Each phase contains 40 secret episodes of 4000 steps: ten sustained-operation, ten intervention-order, ten recovery-spacing and ten joint-intervention episodes. All actions stay within the public bounds. Only the histories and starting observations are hidden before upload. The predictor receives the complete future physical action schedule."
+    }
+  ]
+}
