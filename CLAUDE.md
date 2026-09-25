@@ -119,7 +119,14 @@ python build_submission.py [SYSTEM ...]           # writes submission.zip
   power_grid 800, supply_chain 1150, wildlife 1020, reservoir 1140, ad_auction 1060,
   social_contagion 1080, hospital_queue 760. Copies in `research/backup/`.
   Run `python check_setup.py` first; it shows steps left per system.
-- All ten models are untuned textbook guesses (see `docs/HANDOFF.md`). Nothing fitted to real data.
+- Round E (Sep 25 Toronto, scratch `E/`, xhigh effort): every system refit on first look + round C
+  with structural fixes, chosen by leave-one-run-out and shipped only if it beat the round-D model
+  on unseen round-C data. All ten shipped. Round-D model on unseen C data -> E held-out: epidemic
+  0.81 -> 0.84, market 0.89 -> 0.91, traffic 0.81 -> 0.87, reservoir 0.87 -> 0.90, ad_auction
+  0.83 -> 0.91, wildlife 0.81 -> 0.86, hospital 0.78 -> 0.92 (D had overtime backwards),
+  supply_chain 0.47 -> 0.48 (the mid-action regime is still poorly predicted). power_grid now
+  simulates 960 thermostatic loads: 40 episodes take 20-42 s locally (limit 1,200 s). Zip saved as
+  `uploads/2026-09-25_E_all_ten.zip`.
 
 ## Next steps
 
