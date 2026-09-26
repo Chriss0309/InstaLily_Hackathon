@@ -62,6 +62,7 @@ forecasts 4,000 steps ahead with no feedback. Background, reasoning and per-syst
 | `test_collect_runs.py` | Free check of the `file:` plan guards and the save path (fake client). |
 | `build_submission.py` | Copies `predict.py` + `models/<system>.json` into `submission/<system>/`, smoke-tests, zips. |
 | `score_zip.py` | Free: runs each folder of one or more uploaded ZIPs on every paid run, proxy score per log file. |
+| `compare_zips.py` | Free: proves two ZIPs give exactly the same forecasts per system (paid runs + random 4,000-step schedules). Use it before a final upload. |
 | `check_setup.py` | Env/version check, 4,000-step self-test for all ten, free gateway reads into `docs/`. |
 | `gateway.py` | Credentials (env vars, then `secrets/*credentials*.json`); loads `kit/client.py` by file path. |
 | `kit/` | Organizer kit + rule docs. Untouched. Its `predict.py`/`fit.py` are a different model format. |
@@ -166,6 +167,18 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   Revert sources if any drops: market / social / hospital from `uploads/2026-09-26_G_six.zip`,
   wildlife from `uploads/2026-09-25_E_all_ten.zip`.
 
+- Upload I (public, Sep 26 Toronto, `uploads/2026-09-26_I_four.zip`) scored: wildlife 0.7485
+  (E 0.6560), hospital_queue 0.7328 (G 0.7105), social_contagion 0.5144 (G 0.5114), market
+  0.6215 (G 0.6654). Market dropped, so its `predict.py` block and `models/market.json` are back
+  to G (byte-identical code); wildlife, hospital and social stay on I. Best public per system:
+  ad_auction 0.878, epidemic 0.687, hospital 0.733, market 0.665, power_grid 0.780, reservoir
+  0.845, social 0.514, supply_chain 0.800, traffic 0.817, wildlife 0.749 (mean 0.747).
+  `uploads/2026-09-26_final_candidate_v1.zip` = all ten at their best public version (E:
+  epidemic, power_grid, reservoir, ad_auction; G: market, supply_chain, traffic; I: wildlife,
+  social, hospital). `compare_zips.py` proved every folder gives exactly the same forecasts as
+  the public upload it came from. No public re-upload of market is needed: G's market score is
+  on record and public does not carry into finals.
+
 ## Next steps
 
 1. Done Sep 24: `check_setup.py` passed, documents read (see Findings).
@@ -204,6 +217,14 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
    400 (leaves 0), market 70% joint pulse 400 (leaves 0), wildlife 70% pulse 350 (leaves 13),
    hospital_queue 70% pulse 400 (leaves 0). Public uploads replace the "final check" reserve.
    `foreach ($s in ...) { python collect_runs.py $s "file:schedules/h1.json#$s.long" --out "research\${s}_h1.json" }`
+
+8. Round J (proposed Sep 26, NOT run, needs Chris's OK): the five systems with steps left, one
+   run each from reset: 250 steps at the 70% pulse, then 150 at recovery (`schedules/j1.json`,
+   2,000 steps, validated free against the plan parser). Leaves traffic 425, ad_auction 220,
+   supply_chain 195, reservoir 120, power_grid 0. Why: wildlife's +0.09 came from the Round H
+   70% hold; supply_chain's 70% prediction (retail 852) has never been observed; the 150-step
+   tail measures recovery after a long 70% stress, which every recovery-history episode has.
+   `foreach ($s in "traffic","power_grid","supply_chain","reservoir","ad_auction") { python collect_runs.py $s "file:schedules/j1.json#$s.long" --out "research\${s}_j1.json" }`
 
 ## Findings (append new ones here)
 
@@ -399,6 +420,28 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   in-sample no worse than -0.01, gate passes. Harness baseline = the current repo models.
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
   intervention order, recovery spacing, joint intervention.
+- Upload I lesson (market): the dealer hold fitted the Round H run (0.67 -> 0.95 on our ruler)
+  and was flat on held-out F, yet lost 0.044 publicly. Its gate was a guess (rate 0.035-0.085)
+  and its settlement takes ~200 steps, so the hidden set's 70-100% pulses spend hundreds of
+  steps in a regime no run constrains. Rule: before shipping a new mechanism, run it on
+  4,000-step holds (recovery, 70%, 100%, each control alone) next to the incumbent; a big
+  change where we have no data is a bet, and a public upload is the only way to test it.
+- G -> I moved social's B level at recovery from 240 to 79 by step 4,000 (data ~75 at step
+  500) but the public score moved only +0.003. So hidden episodes do not sit at recovery for
+  thousands of steps: they are busy schedules, and what scores is the response to each change
+  and the settle level of each regime, not the 4,000-step asymptote.
+- 4,000-step hold scan of the shipped models (Sep 26, free, scratch): every system is flat by
+  step ~400 except reservoir (seasonal), power_grid (tiny undamped wobble) and social under
+  incentive 2 alone, where B climbs 75 -> 134 -> 193 -> 282 (loyal recruits convert to
+  incentive-led members, which frees room under the Mb cap, so organic growth refills for
+  ever). Our longest incentive-only segment is 70 steps, so that is unconstrained, not wrong.
+  supply_chain at the 70% pulse: retail builds to 852 (sigma 313) and supplier stock swings
+  0 -> 320 -> 361; never observed.
+- Social misses still in I (F `yx`, seeding then incentive): A over by 35 during the incentive
+  phase (220 vs 184) and under by 28 after it (41 vs 69); the first-look pulse: A 227 vs 202
+  at its step 100. The model converts too many seeded recruits to incentive-led members when
+  membership is high (brief: the onboarding workforce is shared with existing members). The
+  `xy` order and the 500-step recovery hold fit well. That is the next social model round.
 
 
 ## More info please refer to the webpage: 

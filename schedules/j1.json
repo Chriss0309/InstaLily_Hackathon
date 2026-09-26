@@ -1,0 +1,7 @@
+{
+  "traffic.long": [[250, {"clearance_effort": 0.3, "freight_priority": 0.85, "lane_closure": 0.455, "ramp_metering": 0.7, "signal_timing": 0.255, "toll": 1.5}], [150, {}]],
+  "power_grid.long": [[250, {"charging_allowance": 0.3, "interconnector": 0.44, "price_signal": 0.45, "reserve_dispatch": 105.0}], [150, {}]],
+  "supply_chain.long": [[250, {"lead_time_buy": 0.44, "maintenance": 0.3, "order_quantity": 56.0, "product_mix": 0.71, "production_effort": 1.35, "receiving_effort": 0.695}], [150, {}]],
+  "reservoir.long": [[250, {"aeration": 0.3, "irrigation_allocation": 5.6, "release_rate": 9.0, "withdrawal_depth": 0.7}], [150, {}]],
+  "ad_auction.long": [[250, {"bid": 3.95, "budget_cap": 76.0, "targeting_breadth": 0.7075}], [150, {}]]
+}

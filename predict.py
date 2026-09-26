@@ -144,41 +144,24 @@ START["epidemic"], ADVANCE["epidemic"] = start_epidemic, adv_epidemic
 #   b_vp, b_dp: volume rises and depth falls while price is moving (per unit |price step|).
 # Volume and depth otherwise relax first-order. Calm levels are fitted constants.
 # a_tax_v and a_rate_v stay tied (a_tax_v = 2 * a_rate_v); keep the tie when refitting.
-# Round I (scratchpad G/I/market, fit_i.py on all runs incl. Round H): dealer hold.
-# Round H (70% joint pulse held 400 steps from reset) fell only ~0.075/step for 230 steps
-# while depth drained to ~7, then price dropped fast to ~76 and depth refilled. Dealers
-# absorb a share h_w of the falling stage-1 move while they have free funding (u < 1);
-# absorbed moves tie up funding (h_phi per unit); settlement frees h_set per step once the
-# carried pressure is below h_m0; tied funding cuts depth (h_beta at full use) and absorbed
-# flow still trades (volume b_vp per unit). Dealers only carry at moderate rates: gate = 1
-# for rate in [h_r_on, h_r_c - h_r_w/2], 0 above h_r_c + h_r_w/2 (100% rate pulses in
-# base/C/F fell fast with little depth drain). h_w = 0 gives back the Round G structure.
 DEFAULTS["market"] = dict(
-    p0=94.22707358944754,  # calm price level (0 = take from initial)
-    v0=1.8313564552129185,  # calm volume level (0 = take from initial)
-    d0=90.9377370965037,  # calm depth level (0 = take from initial)
+    p0=94.18772,  # calm price level (0 = take from initial)
+    v0=1.84674,  # calm volume level (0 = take from initial)
+    d0=90.97057,  # calm depth level (0 = take from initial)
     a_rate_p=2.33,  # price target falls a_rate_p * interest_rate (fixed: rate plateau)
-    a_tax_v=1.4717824232590682,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
-    a_rate_v=0.7358912116295341,  # volume target falls a_rate_v * interest_rate
-    a_vol_d=-0.010400421135273615,  # depth target change per unit of volume above baseline
-    a_tax_d=10.832503153480042,  # depth target falls a_tax_d * tax
-    k_p=0.10853034080984178,  # price lag stage 1, target below pf (falling)
-    k_pu=0.017416406838700604,  # price lag stage 1, target above pf (recovering)
-    k_p2=0.03573777678588383,  # price lag stage 2
-    k_v=0.30683965253875234,  # volume relaxation rate
-    k_d=0.12335608425138804,  # depth relaxation rate
-    c_t1=2.500230852853291,  # tax slows price stage 1
+    a_tax_v=1.04083,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
+    a_rate_v=0.52041,  # volume target falls a_rate_v * interest_rate
+    a_vol_d=-0.0129,  # depth target change per unit of volume above baseline
+    a_tax_d=10.80974,  # depth target falls a_tax_d * tax
+    k_p=0.10511,  # price lag stage 1, target below pf (falling)
+    k_pu=0.01744,  # price lag stage 1, target above pf (recovering)
+    k_p2=0.03586,  # price lag stage 2
+    k_v=0.30562,  # volume relaxation rate
+    k_d=0.12142,  # depth relaxation rate
+    c_t1=2.63671,  # tax slows price stage 1
     a_amp=0.289,  # tax deepens the committed price move (fixed: joint floor)
-    b_vp=2.1752198589487155,  # volume target rise per unit |price step| (and per unit absorbed move)
-    b_dp=7.48253953989327,  # depth target drop per unit |price step|
-    h_w=0.8759001647306273,  # share of the falling stage-1 move dealers absorb (0 = no dealer hold)
-    h_phi=0.00907906993247424,  # funding tied up per unit absorbed price move (fraction of capacity)
-    h_set=0.004969298051451131,  # funding freed by settlement per step (fraction of capacity)
-    h_beta=0.8100911369368866,  # depth lost at full funding use (fraction)
-    h_r_on=0.035,  # gate ramps up from rate 0 to h_r_on (fixed)
-    h_r_c=0.085,  # gate cut-off rate (fixed: between 0.07 held and 0.1 not held)
-    h_r_w=0.01,  # gate cut-off width (fixed)
-    h_m0=0.05,  # settlement waits until carried pressure is below h_m0 per step (fixed)
+    b_vp=1.79483,  # volume target rise per unit |price step|
+    b_dp=7.91325,  # depth target drop per unit |price step|
 )
 
 
@@ -186,16 +169,10 @@ def start_market(init, p):
     price = _f(init, "price", 1.0)
     vol = _pos(_f(init, "volume"))
     dep = _pos(_f(init, "depth"))
-    return dict(price=price, volume=vol, depth=dep, pf=price, u=0.0,
+    return dict(price=price, volume=vol, depth=dep, pf=price,
                 p0=p["p0"] if p["p0"] > 0 else price,
                 v0=p["v0"] if p["v0"] > 0 else max(vol, 1e-6),
                 d0=p["d0"] if p["d0"] > 0 else max(dep, 1e-6))
-
-
-def _market_gate(r, p):
-    on = _clip(r / max(p.get("h_r_on", 0.035), 1e-9), 0.0, 1.0)
-    w = max(p.get("h_r_w", 0.01), 1e-9)
-    return on * _clip((p.get("h_r_c", 0.085) - r) / w + 0.5, 0.0, 1.0)
 
 
 def adv_market(s, a, p):
@@ -204,24 +181,14 @@ def adv_market(s, a, p):
     g = tax / 0.05
     tp = s["p0"] * _pos(1 - p["a_rate_p"] * r)
     k1 = p["k_pu"] if tp > s["pf"] else p["k_p"]
-    move = _clip(k1, 0, 1) / (1 + _pos(p.get("c_t1", 0.0)) * g) * (tp - s["pf"])
-    u = s.get("u", 0.0)
-    gate = _market_gate(r, p) if move < 0 else 0.0
-    press = gate * -move   # falling pressure dealers could carry
-    hold = _clip(p.get("h_w", 0.0), 0, 1) * gate * _clip((1 - u) / 0.05, 0, 1)
-    absorbed = -move * hold
-    s["pf"] += move * (1 - hold)
-    settle = _pos(p.get("h_set", 0.0)) * _clip(1 - press / max(p.get("h_m0", 0.05), 1e-9), 0, 1)
-    s["u"] = _clip(u + _pos(p.get("h_phi", 0.0)) * absorbed - settle, 0, 1)
+    s["pf"] += _clip(k1, 0, 1) / (1 + _pos(p.get("c_t1", 0.0)) * g) * (tp - s["pf"])
     q = _pos(s["p0"] - (s["p0"] - s["pf"]) * (1 + _pos(p.get("a_amp", 0.0)) * g))
     old = s["price"]
     s["price"] += _clip(p["k_p2"], 0, 1) * (q - s["price"])
     dp = abs(s["price"] - old)
-    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r) \
-        + _pos(p.get("b_vp", 0.0)) * (dp + absorbed)
+    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r) + _pos(p.get("b_vp", 0.0)) * dp
     td = s["d0"] * _pos(1 - p["a_vol_d"] * (s["volume"] / s["v0"] - 1) - p["a_tax_d"] * tax) \
         - _pos(p.get("b_dp", 0.0)) * dp
-    td *= 1 - _clip(p.get("h_beta", 0.0), 0, 1) * s["u"]
     s["volume"] += _clip(p["k_v"], 0, 1) * (tv - s["volume"])
     s["depth"] += _clip(p["k_d"], 0, 1) * (_pos(td) - s["depth"])
     return {"price": s["price"], "volume": s["volume"], "depth": s["depth"]}
