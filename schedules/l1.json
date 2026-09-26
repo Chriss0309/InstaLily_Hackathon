@@ -1,0 +1,5 @@
+{
+  "supply_chain.mix": [[150, {"lead_time_buy": 0.44, "maintenance": 0.3, "order_quantity": 56.0, "production_effort": 1.35, "receiving_effort": 0.695}], [45, {}]],
+  "traffic.ramp": [[100, {"ramp_metering": 1.0}], [30, {}]],
+  "traffic.train": [[10, {}], [30, {"clearance_effort": 0.0, "freight_priority": 1.0, "lane_closure": 0.65, "ramp_metering": 1.0, "signal_timing": 0.15, "toll": 0.0}], [20, {}], [30, {"clearance_effort": 0.0, "freight_priority": 1.0, "lane_closure": 0.65, "ramp_metering": 1.0, "signal_timing": 0.15, "toll": 0.0}], [20, {}], [30, {"clearance_effort": 0.0, "freight_priority": 1.0, "lane_closure": 0.65, "ramp_metering": 1.0, "signal_timing": 0.15, "toll": 0.0}], [20, {}], [30, {"clearance_effort": 0.0, "freight_priority": 1.0, "lane_closure": 0.65, "ramp_metering": 1.0, "signal_timing": 0.15, "toll": 0.0}], [85, {}]]
+}

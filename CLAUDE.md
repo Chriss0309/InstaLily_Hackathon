@@ -244,6 +244,19 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
    tail measures recovery after a long 70% stress, which every recovery-history episode has.
    `foreach ($s in "traffic","power_grid","supply_chain","reservoir","ad_auction") { python collect_runs.py $s "file:schedules/j1.json#$s.long" --out "research\${s}_j1.json" }`
 
+9. Round L (proposed Sep 26, NOT run, needs Chris's OK): three runs aimed at the biggest guesses
+   the Round K hold scans found (`schedules/l1.json`, 600 steps, validated free):
+   supply_chain.mix, 150 steps at the 70% settings but product_mix left at 0.5, then 45 at
+   recovery (195, leaves 0): does class-2 stock pile up on the shelf? Retail at step 150:
+   G 798, K 611, K without the e2 floor 703 (d1 sigma 49). traffic.ramp, ramp_metering 1 alone
+   for 100 steps, then 30 at recovery (130): pins toll's demand effect ct. Speeds while ramp is
+   on: K (ct 0.5) 27.6 / 28.2, ct 0.74 gives 33.9 / 34.4. traffic.train, four full pulses of 30
+   with 20-step rests, then 85 at recovery (275): does the persistent speed_a drop keep growing
+   with each pulse? Traffic keeps 20 steps. ad_auction (220), reservoir (120), social (40) and
+   wildlife (13) are left unspent.
+   `python collect_runs.py supply_chain "file:schedules/l1.json#supply_chain.mix" --out research\supply_chain_l1.json`
+   `foreach ($k in "ramp","train") { python collect_runs.py traffic "file:schedules/l1.json#traffic.$k" --out research\traffic_l1.json }`
+
 ## Findings (append new ones here)
 
 - Kit API: `reset()` returns `{run_id, observation}`; `step()` returns `{observation}`; `budget()`
