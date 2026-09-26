@@ -61,7 +61,7 @@ forecasts 4,000 steps ahead with no feedback. Background, reasoning and per-syst
 | `schedules/` | `file:` plans: JSON `{KEY: [[steps, {control: value}], ...]}`, unset controls at recovery. |
 | `test_collect_runs.py` | Free check of the `file:` plan guards and the save path (fake client). |
 | `build_submission.py` | Copies `predict.py` + `models/<system>.json` into `submission/<system>/`, smoke-tests, zips. |
-| `score_zip.py` | Free: runs each folder of one or more uploaded ZIPs on every paid run, proxy score per log file. |
+| `score_zip.py` | Free: runs each folder of one or more uploaded ZIPs on every paid run, proxy score per log file under both rulers (std/d1). |
 | `compare_zips.py` | Free: proves two ZIPs give exactly the same forecasts per system (paid runs + random 4,000-step schedules). Use it before a final upload. |
 | `check_setup.py` | Env/version check, 4,000-step self-test for all ten, free gateway reads into `docs/`. |
 | `gateway.py` | Credentials (env vars, then `secrets/*credentials*.json`); loads `kit/client.py` by file path. |

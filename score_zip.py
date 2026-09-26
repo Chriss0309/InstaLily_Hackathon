@@ -7,9 +7,11 @@ score_zip.py  -  score uploaded ZIPs on our paid research runs. Free, spends no 
 
 Runs each system folder's own predict.py and model.json the way the scorer does, on every
 run in research/<system>.json and research/<system>_*.json, and prints a proxy score per log
-file: mean of 1/(1+|error|/sigma), where sigma is each observable's spread over all our runs
-for that system (the same proxy as fit.py). Every ZIP is scored with the same sigma, so the
-numbers compare versions. They run higher than public scores, whose sigma is tighter.
+file: mean of 1/(1+|error|/sigma), under two sigmas, shown as std/d1:
+  std: each observable's spread over all our runs for that system (the same proxy as fit.py)
+  d1:  5.6 x the spread of its one-step changes. Tracks the public scores of our uploads
+       better (CLAUDE.md Findings, "The ruler"). Trust a change only if it wins on both.
+Every ZIP is scored with the same sigmas, so the numbers compare versions.
 Runs a version was not fitted on (e.g. a new round) are the honest comparison.
 """
 import glob
@@ -55,7 +57,10 @@ def main():
         names = list(next(iter(logs.values()))[0][0])
         sig = {k: statistics.pstdev([o[k] for runs in logs.values() for _, _, obs in runs for o in obs])
                or 1e-6 for k in names}
-        print(f"== {fam}")
+        sig1 = {k: 5.6 * statistics.pstdev([obs[t][k] - obs[t - 1][k] for runs in logs.values()
+                                            for _, _, obs in runs for t in range(1, len(obs))]) or 1e-6
+                for k in names}
+        print(f"== {fam}   (std/d1)")
         for zi, zpath in enumerate(zips):
             folder = os.path.join(tmp, str(zi), fam)
             if not os.path.exists(os.path.join(folder, "predict.py")):
@@ -66,16 +71,17 @@ def main():
             spec.loader.exec_module(mod)
             ctx = {"family": fam, "observables": names, "intervention_bounds": {}, "brief": "",
                    "documents": [], "protocol": "", "revision": ""}
-            cols, tot, cnt = [], 0.0, 0
+            cols, tot, tot1, cnt = [], 0.0, 0.0, 0
             for log, runs in logs.items():
-                s, c = 0.0, 0
+                s, s1, c = 0.0, 0.0, 0
                 for initial, actions, obs in runs:
                     for row, o in zip(mod.predict(initial, actions, ctx), obs):
                         s += sum(1 / (1 + abs(row[k] - o[k]) / sig[k]) for k in names)
+                        s1 += sum(1 / (1 + abs(row[k] - o[k]) / sig1[k]) for k in names)
                         c += len(names)
-                cols.append(f"{log.replace(fam, '').replace('.json', '') or 'base'} {s / c:.3f}")
-                tot += s; cnt += c
-            print(f"   {os.path.basename(zpath):32s} all {tot / cnt:.3f} | " + " | ".join(cols))
+                cols.append(f"{log.replace(fam, '').replace('.json', '') or 'base'} {s / c:.3f}/{s1 / c:.3f}")
+                tot += s; tot1 += s1; cnt += c
+            print(f"   {os.path.basename(zpath):32s} all {tot / cnt:.3f}/{tot1 / cnt:.3f} | " + " | ".join(cols))
 
 
 if __name__ == "__main__":
