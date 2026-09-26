@@ -143,7 +143,7 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
 3. Per system: ~200 steps of the standard plan (see handoff), fit, check residuals, upload.
 4. Prioritize by expected gain. Keep ~20% of each budget for validating final models.
 5. From Sep 28 12:00: Chris must upload finals explicitly in the Final tab.
-6. Round F (planned Sep 25, approved by Chris Sep 25, run it locally): order and recovery-spacing tests,
+6. Done Sep 26 (see Findings): Round F, order and recovery-spacing tests,
    `schedules/f1.json`, 5,015 steps, every system keeps >= 400. Per system three runs from reset:
    `xy` = stress X then Y, `yx` = Y then X, `spacing` = the reference pulse repeated with a short
    then a longer rest (market and hospital fit only two gaps' worth). Save to
@@ -285,6 +285,29 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   by an editor, indexer or antivirus). The partial run is real paid data: it may sit in
   `research/wildlife_f1.json` and/or a leftover `.tmp`. `collect_runs.py` now retries locked saves
   and writes a `_rescue_` file instead of crashing.
+- Round F collected Sep 26 Toronto (02:48-03:23): all 30 runs complete and match the schedule.
+  Wildlife also has the crashed partial xy (run 0 of `research/wildlife_f1.json`, 91 steps; the
+  92-step copy moved to `research/backup/`). Steps left: epidemic 400, market 400, traffic 825,
+  power_grid 400, supply_chain 595, wildlife 363, reservoir 520, ad_auction 620,
+  social_contagion 540, hospital_queue 400.
+- E on unseen Round F (proxy, std sigma): epidemic 0.92, reservoir 0.89, market 0.88, ad_auction
+  0.87, power_grid 0.84, wildlife 0.83, social_contagion 0.80, hospital_queue 0.79, traffic 0.75,
+  supply_chain 0.70. D beats E there on hospital (0.81), social (0.82) and supply_chain (0.75):
+  the Round C refit bought single-control accuracy at some cost in order/spacing.
+- Round F misses, data vs E: traffic blocks for real (pulse 1: flow_b 0 vs model 11; pulse 2:
+  flow_a 0, flow_b 42 vs 6/11; order effect 1.0-1.6 sigma, model ~0 on route b), so the shared
+  junction / spillback mechanism is active and unmodeled. supply_chain: under the pulse supplier
+  stock drains to ~9 (model 142) and retail builds to 84-250 (model 0). hospital_queue:
+  discharges are exactly 0 in every pulse (model 1.8), only 5 after a 15-step rest (model 12,
+  queue 301 vs 230), 15.7 after a long one (model 10.9). social_contagion: the post-pulse drop
+  is too deep in the model (after a 10-step rest A 93 vs 61, B 47 vs 28), peaks low by 10-25.
+  wildlife: prey is back to 98/91 after a 15-step rest (model 36/26) and the model overshoots
+  after long rests (138-149 vs 121-123). reservoir: quality shows a real order effect (0.57
+  sigma), the model none. market: price is the weak observable (rate-then-tax falls further
+  than the model, joint pulses fall less). power_grid: frequency is the weak observable.
+  epidemic and ad_auction hold up.
+- E's code, checked Sep 26: 40 random 4,000-step episodes per system (holds of 1 to 4,000 steps)
+  are all finite and non-negative. power_grid is the slowest at 16 s for 40 (limit 1,200 s).
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
   intervention order, recovery spacing, joint intervention.
 
