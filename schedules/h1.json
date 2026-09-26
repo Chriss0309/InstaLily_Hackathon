@@ -1,0 +1,7 @@
+{
+  "social_contagion.long": [[500, {}]],
+  "epidemic.long": [[400, {}]],
+  "market.long": [[400, {"interest_rate": 0.07, "transaction_tax": 0.035}]],
+  "wildlife.long": [[350, {"corridor_access": 0.7, "habitat_protection": 0.37, "hunting_quota": 4.9}]],
+  "hospital_queue.long": [[400, {"diagnostic_allocation": 0.645, "elective_scheduling": 14.0, "followup_capacity": 0.3, "overtime": 0.7, "staffing": 9.5, "urgent_priority": 0.88}]]
+}

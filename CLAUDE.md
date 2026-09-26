@@ -147,6 +147,13 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   power_grid, reservoir, ad_auction) are byte-identical to E. Upload zip with only the six
   changed systems: `uploads/2026-09-26_G_six.zip` (not uploaded yet; public scores pending).
 
+- Upload G (public, Sep 26 Toronto, `uploads/2026-09-26_G_six.zip`) scored: hospital_queue 0.7105
+  (E 0.6981), market 0.6654 (0.6218), social_contagion 0.5114 (0.4971), supply_chain 0.8003
+  (0.7938), traffic 0.8167 (0.8103), wildlife 0.6527 (0.6560). Mean of all ten 0.735 (E 0.727).
+  Wildlife dropped, so the repo's wildlife block and params are back to E (byte-identical to E's
+  output); no upload needed for that, the final zip will carry it. Gains were far smaller than on
+  our held-out Round F runs.
+
 ## Next steps
 
 1. Done Sep 24: `check_setup.py` passed, documents read (see Findings).
@@ -179,6 +186,12 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
    python collect_runs.py SYSTEM --dry-run "file:schedules/f1.json#SYSTEM.xy"
    foreach ($k in "xy","yx","spacing") { python collect_runs.py SYSTEM "file:schedules/f1.json#SYSTEM.$k" --out research\SYSTEM_f1.json }
    ```
+
+7. Round H (proposed Sep 26, NOT run, needs Chris's OK): one long hold from reset per weak system,
+   `schedules/h1.json`, 2,050 steps: social_contagion recovery 500 (leaves 40), epidemic recovery
+   400 (leaves 0), market 70% joint pulse 400 (leaves 0), wildlife 70% pulse 350 (leaves 13),
+   hospital_queue 70% pulse 400 (leaves 0). Public uploads replace the "final check" reserve.
+   `foreach ($s in ...) { python collect_runs.py $s "file:schedules/h1.json#$s.long" --out "research\${s}_h1.json" }`
 
 ## Findings (append new ones here)
 
@@ -344,6 +357,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   step 4,000, G: 240; data after every pulse settles A ~45-75, B ~35-65, and growth slows as B rises).
   Our runs are <= 420 steps, so the long-run ceiling is unidentified. This may be most of the
   0.497 public score (10 of 40 episodes are long holds).
+- Public vs our proxy after G: social 0.51 vs ~0.90, epidemic 0.69 vs 0.92, wildlife 0.65 vs 0.87,
+  market 0.67 vs 0.90, hospital 0.71 vs 0.84; traffic, supply_chain, power_grid, reservoir and
+  ad_auction are within ~0.1. Every current model settles to a fixed point by ~step 400 (the
+  epidemic's waves damp to a flat ~101 cases at recovery; social's B is the only drift, to 240).
+  Our runs stop at 420-700 steps, so 90% of every 4,000-step episode is extrapolation. The big
+  gaps are the slow, long-memory systems.
+- Current-model predictions for the Round H runs (compare after collecting): social recovery
+  A/B t100 64/50, t300 94/96, t500 102/127; epidemic recovery cases/hospital t100 46/40, t200
+  113/88, t400 100/72; market 70% joint price t100 78.8, t400 75.7, depth ~56; wildlife 70% prey
+  N/S t100 34/28, t350 35/29; hospital 70% queue ~318, discharges t100 2.85, t400 1.96, wait 78.
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
   intervention order, recovery spacing, joint intervention.
 

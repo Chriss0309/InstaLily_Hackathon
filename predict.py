@@ -541,46 +541,42 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 
 
 # ------------------------------------------------------------------ wildlife
-# Prey + hidden food stock per region, predators, and a corridor transit pool. Round G (scratchpad
-# G/wildlife): fitted to first look + round C + round F.
-# Food sets the crowding capacity, not the birth rate of a thin herd: births b / (1 + prey / (Pb*food)).
-# After any crash prey regrows at ~0.2/step whatever the history (round F spacing), while food that built
-# up during a long low spell gives the big overshoot (reset, 100-step pulse) and a short spell a small one.
-# Hunting takes a requested number of animals: harvest saturates at about hq*Hs per unit quota per step
-# at high prey, with a refuge at low prey (Ph). Per-capita loss grows as prey falls, then stops near ~7.
-# Habitat protection acts through prey deaths (hm) and food renewal (hk), more in the north.
+# Prey + hidden food stock per region, predators, and a corridor transit pool. Fitted to all research
+# runs (first look + round C single-control run, scratchpad E/wildlife).
+# Food refills while prey is low, which gives the prey overshoot after every recovery.
+# Hunting: protected habitat shelters prey (exposure 1 - sh*hab, more in the north).
+# Low habitat protection raises prey deaths in both regions within a few steps.
 # Corridor: animals leave both regions while it is open and wait in a transit pool that settles in the
 # other region at 1/tp, 1/td per step, so closing it still brings animals home (both regions dip, then rebound).
-# Predators are E's equation unchanged: growth saturating in prey, crowding saturating at high density.
+# Predator crowding saturates at high density (reset predators 8-15 fall ~5% per step).
 DEFAULTS["wildlife"] = dict(
-    b=0.29206325026344454,  # prey births per capita at low density
-    mu=0.0868412627390307,  # prey death rate
-    hm_n=0.5333278890247369,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
-    hm_s=0.3778253545890282,  # same, south
-    rho_n=0.002904063889637534,  # food renewal, north
-    rho_s=0.002414743835653508,  # food renewal, south
-    hk_n=0.8204361814869938,  # habitat boost to food renewal, north
-    hk_s=0.309403155036187,  # habitat boost to food renewal, south
-    cons=0.00033320281263379646,  # food eaten per prey
-    F0=0.2797781479487969,  # food level at reset (fraction of capacity)
-    Pb=435.9228781518344,  # prey crowding of births, per unit food
-    hq=0.09510735544832169,  # harvest per unit quota
-    Ph=11.391713309886619,  # harvest refuge: prey level where harvest halves per capita
-    Hs=11.399930511192862,  # harvest saturation: total harvest levels off near hq*quota*expo*Hs animals per step
-    sh_n=0.0011109008367432558,  # shelter: hunting exposure 1 - sh*hab, north
-    sh_s=0.0010604466289685602,  # shelter, south
+    b=0.26781299869299846,  # prey births per unit food
+    mu=0.09378084869219784,  # prey death rate
+    hm_n=0.2576395951605718,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
+    hm_s=0.18540464161864234,  # same, south
+    rho_n=0.022985768034225865,  # food renewal, north
+    rho_s=0.02109503717824554,  # food renewal, south
+    hk_n=0.3374597311757939,  # habitat boost to food renewal, north
+    hk_s=0.09220229754644624,  # habitat boost to food renewal, south
+    cons=0.0003492328513884398,  # food eaten per prey
+    F0=0.7332502500176639,  # food level at reset (fraction of capacity)
+    Pb=626.7976256737691,  # prey crowding of births
+    hq=0.017334337798512452,  # harvest per unit quota
+    Ph=4.123764333241913,  # harvest refuge: prey level where harvest halves per capita
+    sh_n=0.38748040073742684,  # shelter: hunting exposure 1 - sh*hab, north
+    sh_s=0.30993373356878345,  # shelter, south
     a=0.060447236101810194,  # predator growth at abundant prey
     Hp=1.2493526797510561,  # prey level for half predator growth
     m=0.029621192537206093,  # predator death rate
     k=0.016763889930661843,  # predator crowding
     Dk=8.558428510509604,  # predator level where crowding per predator halves
     Hv=2.09556997964094e-08,  # prey level where half the predators are counted
-    ep_n=0.023829865924902643,  # prey leaving the north per step at full corridor access
-    ep_s=0.03334043438040934,  # prey leaving the south per step at full corridor access
-    ed_n=0.01937178745847472,  # predators leaving the north per step at full corridor access
-    ed_s=0.02004989769620451,  # predators leaving the south per step at full corridor access
-    tp=45.91251138666642,  # prey transit pool: 1/tp of it settles in the other region per step
-    td=28.36763611439012,  # predator transit pool: 1/td settles per step
+    ep_n=0.011431681705489506,  # prey leaving the north per step at full corridor access
+    ep_s=0.01842451280556638,  # prey leaving the south per step at full corridor access
+    ed_n=0.017825653865054313,  # predators leaving the north per step at full corridor access
+    ed_s=0.017748456905400296,  # predators leaving the south per step at full corridor access
+    tp=49.97683271277038,  # prey transit pool: 1/tp of it settles in the other region per step
+    td=28.48842990500357,  # predator transit pool: 1/td settles per step
 )
 
 
@@ -605,8 +601,8 @@ def adv_wildlife(s, a, p):
         eat = p["cons"] * prey * food
         s["f" + reg] = min(max(food + rho * (1.0 - food) - eat, 0.0), 1.0)
         expo = _clip(1.0 - p["sh_" + reg] * hab, 0.0, 1.0)
-        harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"]) / (1.0 + prey / p["Hs"])
-        birth = p["b"] / (1.0 + prey / (p["Pb"] * max(food, 1e-9)))
+        harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"])
+        birth = p["b"] * food / (1.0 + prey / p["Pb"])
         death = p["mu"] * (1.0 + p["hm_" + reg] * (1.0 - hab))
         v = prey + prey * (birth - death) - harvest
         s["p" + reg] = v if v > 1e-6 else 1e-6
