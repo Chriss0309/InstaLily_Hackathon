@@ -144,24 +144,41 @@ START["epidemic"], ADVANCE["epidemic"] = start_epidemic, adv_epidemic
 #   b_vp, b_dp: volume rises and depth falls while price is moving (per unit |price step|).
 # Volume and depth otherwise relax first-order. Calm levels are fitted constants.
 # a_tax_v and a_rate_v stay tied (a_tax_v = 2 * a_rate_v); keep the tie when refitting.
+# Round I (scratchpad G/I/market, fit_i.py on all runs incl. Round H): dealer hold.
+# Round H (70% joint pulse held 400 steps from reset) fell only ~0.075/step for 230 steps
+# while depth drained to ~7, then price dropped fast to ~76 and depth refilled. Dealers
+# absorb a share h_w of the falling stage-1 move while they have free funding (u < 1);
+# absorbed moves tie up funding (h_phi per unit); settlement frees h_set per step once the
+# carried pressure is below h_m0; tied funding cuts depth (h_beta at full use) and absorbed
+# flow still trades (volume b_vp per unit). Dealers only carry at moderate rates: gate = 1
+# for rate in [h_r_on, h_r_c - h_r_w/2], 0 above h_r_c + h_r_w/2 (100% rate pulses in
+# base/C/F fell fast with little depth drain). h_w = 0 gives back the Round G structure.
 DEFAULTS["market"] = dict(
-    p0=94.18772,  # calm price level (0 = take from initial)
-    v0=1.84674,  # calm volume level (0 = take from initial)
-    d0=90.97057,  # calm depth level (0 = take from initial)
+    p0=94.22707358944754,  # calm price level (0 = take from initial)
+    v0=1.8313564552129185,  # calm volume level (0 = take from initial)
+    d0=90.9377370965037,  # calm depth level (0 = take from initial)
     a_rate_p=2.33,  # price target falls a_rate_p * interest_rate (fixed: rate plateau)
-    a_tax_v=1.04083,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
-    a_rate_v=0.52041,  # volume target falls a_rate_v * interest_rate
-    a_vol_d=-0.0129,  # depth target change per unit of volume above baseline
-    a_tax_d=10.80974,  # depth target falls a_tax_d * tax
-    k_p=0.10511,  # price lag stage 1, target below pf (falling)
-    k_pu=0.01744,  # price lag stage 1, target above pf (recovering)
-    k_p2=0.03586,  # price lag stage 2
-    k_v=0.30562,  # volume relaxation rate
-    k_d=0.12142,  # depth relaxation rate
-    c_t1=2.63671,  # tax slows price stage 1
+    a_tax_v=1.4717824232590682,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
+    a_rate_v=0.7358912116295341,  # volume target falls a_rate_v * interest_rate
+    a_vol_d=-0.010400421135273615,  # depth target change per unit of volume above baseline
+    a_tax_d=10.832503153480042,  # depth target falls a_tax_d * tax
+    k_p=0.10853034080984178,  # price lag stage 1, target below pf (falling)
+    k_pu=0.017416406838700604,  # price lag stage 1, target above pf (recovering)
+    k_p2=0.03573777678588383,  # price lag stage 2
+    k_v=0.30683965253875234,  # volume relaxation rate
+    k_d=0.12335608425138804,  # depth relaxation rate
+    c_t1=2.500230852853291,  # tax slows price stage 1
     a_amp=0.289,  # tax deepens the committed price move (fixed: joint floor)
-    b_vp=1.79483,  # volume target rise per unit |price step|
-    b_dp=7.91325,  # depth target drop per unit |price step|
+    b_vp=2.1752198589487155,  # volume target rise per unit |price step| (and per unit absorbed move)
+    b_dp=7.48253953989327,  # depth target drop per unit |price step|
+    h_w=0.8759001647306273,  # share of the falling stage-1 move dealers absorb (0 = no dealer hold)
+    h_phi=0.00907906993247424,  # funding tied up per unit absorbed price move (fraction of capacity)
+    h_set=0.004969298051451131,  # funding freed by settlement per step (fraction of capacity)
+    h_beta=0.8100911369368866,  # depth lost at full funding use (fraction)
+    h_r_on=0.035,  # gate ramps up from rate 0 to h_r_on (fixed)
+    h_r_c=0.085,  # gate cut-off rate (fixed: between 0.07 held and 0.1 not held)
+    h_r_w=0.01,  # gate cut-off width (fixed)
+    h_m0=0.05,  # settlement waits until carried pressure is below h_m0 per step (fixed)
 )
 
 
@@ -169,10 +186,16 @@ def start_market(init, p):
     price = _f(init, "price", 1.0)
     vol = _pos(_f(init, "volume"))
     dep = _pos(_f(init, "depth"))
-    return dict(price=price, volume=vol, depth=dep, pf=price,
+    return dict(price=price, volume=vol, depth=dep, pf=price, u=0.0,
                 p0=p["p0"] if p["p0"] > 0 else price,
                 v0=p["v0"] if p["v0"] > 0 else max(vol, 1e-6),
                 d0=p["d0"] if p["d0"] > 0 else max(dep, 1e-6))
+
+
+def _market_gate(r, p):
+    on = _clip(r / max(p.get("h_r_on", 0.035), 1e-9), 0.0, 1.0)
+    w = max(p.get("h_r_w", 0.01), 1e-9)
+    return on * _clip((p.get("h_r_c", 0.085) - r) / w + 0.5, 0.0, 1.0)
 
 
 def adv_market(s, a, p):
@@ -181,14 +204,24 @@ def adv_market(s, a, p):
     g = tax / 0.05
     tp = s["p0"] * _pos(1 - p["a_rate_p"] * r)
     k1 = p["k_pu"] if tp > s["pf"] else p["k_p"]
-    s["pf"] += _clip(k1, 0, 1) / (1 + _pos(p.get("c_t1", 0.0)) * g) * (tp - s["pf"])
+    move = _clip(k1, 0, 1) / (1 + _pos(p.get("c_t1", 0.0)) * g) * (tp - s["pf"])
+    u = s.get("u", 0.0)
+    gate = _market_gate(r, p) if move < 0 else 0.0
+    press = gate * -move   # falling pressure dealers could carry
+    hold = _clip(p.get("h_w", 0.0), 0, 1) * gate * _clip((1 - u) / 0.05, 0, 1)
+    absorbed = -move * hold
+    s["pf"] += move * (1 - hold)
+    settle = _pos(p.get("h_set", 0.0)) * _clip(1 - press / max(p.get("h_m0", 0.05), 1e-9), 0, 1)
+    s["u"] = _clip(u + _pos(p.get("h_phi", 0.0)) * absorbed - settle, 0, 1)
     q = _pos(s["p0"] - (s["p0"] - s["pf"]) * (1 + _pos(p.get("a_amp", 0.0)) * g))
     old = s["price"]
     s["price"] += _clip(p["k_p2"], 0, 1) * (q - s["price"])
     dp = abs(s["price"] - old)
-    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r) + _pos(p.get("b_vp", 0.0)) * dp
+    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r) \
+        + _pos(p.get("b_vp", 0.0)) * (dp + absorbed)
     td = s["d0"] * _pos(1 - p["a_vol_d"] * (s["volume"] / s["v0"] - 1) - p["a_tax_d"] * tax) \
         - _pos(p.get("b_dp", 0.0)) * dp
+    td *= 1 - _clip(p.get("h_beta", 0.0), 0, 1) * s["u"]
     s["volume"] += _clip(p["k_v"], 0, 1) * (tv - s["volume"])
     s["depth"] += _clip(p["k_d"], 0, 1) * (_pos(td) - s["depth"])
     return {"price": s["price"], "volume": s["volume"], "depth": s["depth"]}
@@ -541,42 +574,53 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 
 
 # ------------------------------------------------------------------ wildlife
-# Prey + hidden food stock per region, predators, and a corridor transit pool. Fitted to all research
-# runs (first look + round C single-control run, scratchpad E/wildlife).
-# Food refills while prey is low, which gives the prey overshoot after every recovery.
-# Hunting: protected habitat shelters prey (exposure 1 - sh*hab, more in the north).
-# Low habitat protection raises prey deaths in both regions within a few steps.
+# Prey + hidden food stock per region, predators, and a corridor transit pool. Round I (scratchpad
+# G/I/wildlife): fitted to first look + round C + round F + the round H 350-step 70% pulse hold.
+# Food sets the crowding capacity, not the birth rate of a thin herd: births b / (1 + prey / (Pb*food)).
+# After any crash prey regrows at the same pace whatever the history, while food that built up during a
+# long low spell gives the big overshoot (reset, 100-step pulse) and a short spell a small one. Under a
+# sustained pulse food refills but prey stays thin, so there is no rebound (round H: 70% pulse holds
+# prey at ~20 / ~18 for 300 steps).
+# Hunting takes about a fixed count per step at high prey (hq*quota*Hs) with a refuge at low prey (Ph), so
+# harvest per animal peaks near 20 prey. Strong hunting (the 70-100% pulse box) pushes prey to a low floor
+# (~20 at 70%, ~7 at the full pulse) instead of a proportional decline.
+# Habitat protection acts through prey deaths (hm) and food renewal (hk), more in the north; the fitted
+# shelter from hunting (sh) is near zero.
 # Corridor: animals leave both regions while it is open and wait in a transit pool that settles in the
-# other region at 1/tp, 1/td per step, so closing it still brings animals home (both regions dip, then rebound).
-# Predator crowding saturates at high density (reset predators 8-15 fall ~5% per step).
+# other region at 1/tp, 1/td per step, so closing it still brings animals home. Predators in transit
+# die at tmd per step, so an open corridor keeps predators low for as long as it stays open
+# (round C: 2.33 -> 1.67 in 60 steps; round H: 1.76 at 70% for 200 steps).
+# Predator crowding saturates at high density (reset predators 8-15 fall fast, then settle near 2.3).
 DEFAULTS["wildlife"] = dict(
-    b=0.26781299869299846,  # prey births per unit food
-    mu=0.09378084869219784,  # prey death rate
-    hm_n=0.2576395951605718,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
-    hm_s=0.18540464161864234,  # same, south
-    rho_n=0.022985768034225865,  # food renewal, north
-    rho_s=0.02109503717824554,  # food renewal, south
-    hk_n=0.3374597311757939,  # habitat boost to food renewal, north
-    hk_s=0.09220229754644624,  # habitat boost to food renewal, south
-    cons=0.0003492328513884398,  # food eaten per prey
-    F0=0.7332502500176639,  # food level at reset (fraction of capacity)
-    Pb=626.7976256737691,  # prey crowding of births
-    hq=0.017334337798512452,  # harvest per unit quota
-    Ph=4.123764333241913,  # harvest refuge: prey level where harvest halves per capita
-    sh_n=0.38748040073742684,  # shelter: hunting exposure 1 - sh*hab, north
-    sh_s=0.30993373356878345,  # shelter, south
-    a=0.060447236101810194,  # predator growth at abundant prey
-    Hp=1.2493526797510561,  # prey level for half predator growth
-    m=0.029621192537206093,  # predator death rate
-    k=0.016763889930661843,  # predator crowding
-    Dk=8.558428510509604,  # predator level where crowding per predator halves
+    b=0.6362021787044908,  # prey births per capita at low density (b - mu ~ 0.14/step: regrowth of a thin herd)
+    mu=0.4999951619736701,  # prey death rate (b and mu act as a pair; the fit sits at fit_i's cap mu <= 0.5)
+    hm_n=0.12324542792794141,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
+    hm_s=0.08572935810245555,  # same, south
+    rho_n=0.00413835708177833,  # food renewal, north
+    rho_s=0.0028053682271417554,  # food renewal, south
+    hk_n=0.9641170108811695,  # habitat boost to food renewal, north
+    hk_s=0.6700595767282168,  # habitat boost to food renewal, south
+    cons=0.00024005825752208948,  # food eaten per prey
+    F0=0.4420735707361732,  # food level at reset (fraction of capacity)
+    Pb=2034.0758036218936,  # prey crowding of births, per unit food
+    hq=0.07512128021510996,  # harvest per unit quota
+    Ph=20.32150445273686,  # harvest refuge: prey level where harvest halves per capita
+    Hs=20.075573650419937,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
+    sh_n=0.028176737367711778,  # shelter: hunting exposure 1 - sh*hab, north
+    sh_s=0.0007775495732185203,  # shelter, south
+    a=0.04905029861810504,  # predator growth at abundant prey
+    Hp=1.0548383106089296,  # prey level for half predator growth
+    m=7.612037624790867e-05,  # predator death rate
+    k=0.03254795359959699,  # predator crowding
+    Dk=4.101246942704927,  # predator level where crowding per predator halves
     Hv=2.09556997964094e-08,  # prey level where half the predators are counted
-    ep_n=0.011431681705489506,  # prey leaving the north per step at full corridor access
-    ep_s=0.01842451280556638,  # prey leaving the south per step at full corridor access
-    ed_n=0.017825653865054313,  # predators leaving the north per step at full corridor access
-    ed_s=0.017748456905400296,  # predators leaving the south per step at full corridor access
-    tp=49.97683271277038,  # prey transit pool: 1/tp of it settles in the other region per step
-    td=28.48842990500357,  # predator transit pool: 1/td settles per step
+    ep_n=0.046769319563386876,  # prey leaving the north per step at full corridor access
+    ep_s=0.06084258159428294,  # prey leaving the south per step at full corridor access
+    ed_n=0.03575732963153821,  # predators leaving the north per step at full corridor access
+    ed_s=0.03655340930869652,  # predators leaving the south per step at full corridor access
+    tp=33.04544506024473,  # prey transit pool: 1/tp of it settles in the other region per step
+    td=13.92757536048174,  # predator transit pool: 1/td settles per step
+    tmd=0.02344325674642063,  # predators in transit that die per step
 )
 
 
@@ -601,8 +645,8 @@ def adv_wildlife(s, a, p):
         eat = p["cons"] * prey * food
         s["f" + reg] = min(max(food + rho * (1.0 - food) - eat, 0.0), 1.0)
         expo = _clip(1.0 - p["sh_" + reg] * hab, 0.0, 1.0)
-        harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"])
-        birth = p["b"] * food / (1.0 + prey / p["Pb"])
+        harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"]) / (1.0 + prey / p["Hs"])
+        birth = p["b"] / (1.0 + prey / (p["Pb"] * max(food, 1e-9)))
         death = p["mu"] * (1.0 + p["hm_" + reg] * (1.0 - hab))
         v = prey + prey * (birth - death) - harvest
         s["p" + reg] = v if v > 1e-6 else 1e-6
@@ -616,6 +660,8 @@ def adv_wildlife(s, a, p):
     tpn, tps, tdn, tds = s["go"]
     s["go"] = (xps, xpn, xds, xdn)
     s["wpn"] += tpn; s["wps"] += tps; s["wdn"] += tdn; s["wds"] += tds
+    surv = 1.0 - _clip(p["tmd"], 0.0, 1.0)
+    s["wdn"] *= surv; s["wds"] *= surv
     tp = max(p["tp"], 1.0); td = max(p["td"], 1.0)
     rel = s["wpn"] / tp; s["wpn"] -= rel; s["pn"] += rel
     rel = s["wps"] / tp; s["wps"] -= rel; s["ps"] += rel
@@ -792,7 +838,7 @@ START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 
 
 # ------------------------------------------------------------------ social contagion
-# Fitted structural model (round G, B organic growth per member bounded <= 0). Per community: core members K (the initial (1-f) share,
+# Fitted structural model (round I: round G + finite relationship-led audiences M). Per community: core members K (the initial (1-f) share,
 # never leave), loyal recruits L (organic + bridge introductions), seeded recruits S,
 # incentive-led members J (the initial f share, promised cohorts, converts), disappointed former
 # members D, and people who could still join P = N - members - D - queued (finite community N).
@@ -804,30 +850,34 @@ START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 # convert to J at kc*u; J leaves at lam*(1-u), S churns at lr*(1-u), and L and S churn at
 # lamM*(E - 2u) while incentive sits below its expectation E (EMA, `tau_e`). Everyone who leaves
 # becomes disappointed and returns to P after `tau_d` steps on average. Organic growth
-# (a + b*A) x workforce room x P/N goes to L.
+# (a + b*(S + J)) x workforce room x P/N x (1 - (K + L)/M) goes to L: it fills a finite
+# relationship-led audience M (round H long hold: no outreach settles near A 92, B 75-79), and
+# seeded / incentive-led members crowd it out (b <= 0 in practice).
 DEFAULTS["social_contagion"] = dict(
-    f=0.5955365677634277,         # share of initial members who are incentive-led (leave at reset)
-    lam=0.05987886032943476,       # incentive-led drain per step at zero incentive
-    tq=5.218456628106232,         # steps per local onboarding stage (2 stages)
-    tq2=31.534565005523298,       # steps per bridge-introduction stage (2 stages)
-    sa=1.56791798570309,         # A queue entries per unit seeding (times 1 - bridge)
-    sb=0.45141383640761323,       # B queue entries per unit seeding (bridge share goes via introductions)
-    Nt=529.4387189558829,         # shared onboarding capacity (A + B members)
-    aa=1.1211220403114361,        # organic growth A per step (times room)
-    ab=0.4710383447266911,       # organic growth B per step (times room)
-    ba=-0.010387650306628608,     # organic growth per member A
-    bb=-6.749067707581832e-05,      # organic growth per member B
-    kc=0.0764713011867376,       # recruits converted to incentive-led per step at full incentive
-    lr=0.008481136103862485,      # seeded-recruit churn per step at zero incentive
-    lamM=0.1336494063304035,      # recruit churn per step per unit of unmet incentive expectation
-    tau_e=13.666104189635739,     # incentive expectation time constant (steps)
-    phi=0.005769467211243506,                      # share of queue entries promised at full incentive
-    m=0.11583489044923706,                        # extra seeded recruitment at full incentive (x (1 + m*u))
-    Na=353.7802632648873,                       # community size A
-    Nb=249.95709806194188,                       # community size B
-    tau_d=1.0000100589362795,                   # steps before a disappointed former member reconsiders
-    kr=11.72825499785435,                       # churn reduction from cross-community relationships (1/(1 + kr*R))
-    tau_r=583.699194352191,                   # relationship memory R: EMA of bridge outreach over tau_r steps
+    f=0.5923510727698302,         # share of initial members who are incentive-led (leave at reset)
+    lam=0.06305012808425219,       # incentive-led drain per step at zero incentive
+    tq=5.064048134444638,         # steps per local onboarding stage (2 stages)
+    tq2=33.45617289272342,       # steps per bridge-introduction stage (2 stages)
+    sa=1.5864212644549838,         # A queue entries per unit seeding (times 1 - bridge)
+    sb=0.3836912827340671,       # B queue entries per unit seeding (bridge share goes via introductions)
+    Nt=512.5682465286342,         # shared onboarding capacity (A + B members)
+    aa=1.191710611007864,        # organic growth A per step (times room)
+    ab=0.7388055464438019,       # organic growth B per step (times room)
+    ba=-0.016600631807513623,     # organic growth per seeded / incentive-led member A (crowding)
+    bb=-0.0020671914338718784,      # organic growth per seeded / incentive-led member B (crowding)
+    kc=0.11040981739394469,       # recruits converted to incentive-led per step at full incentive
+    lr=0.008480361139482055,      # seeded-recruit churn per step at zero incentive
+    lamM=0.18934179083944339,      # recruit churn per step per unit of unmet incentive expectation
+    tau_e=12.257803612357996,     # incentive expectation time constant (steps)
+    phi=0.018147059533629058,                      # share of queue entries promised at full incentive
+    m=0.07639907936240715,                        # extra seeded recruitment at full incentive (x (1 + m*u))
+    Na=359.5096833010329,                       # community size A
+    Nb=432.8338930456915,                       # community size B
+    tau_d=1.0000000076683415,                   # steps before a disappointed former member reconsiders
+    kr=14.64531814616158,                       # churn reduction from cross-community relationships (1/(1 + kr*R))
+    tau_r=826.2036008778531,                   # relationship memory R: EMA of bridge outreach over tau_r steps
+    Ma=92.3969717464778,                     # relationship-led audience A: organic growth stops as core + loyal reach it
+    Mb=79.3050402286664,                     # relationship-led audience B
 )
 
 
@@ -870,7 +920,7 @@ def adv_social(s, a, p):
         s["P1" + c] += qx - r1; s["P2" + c] += r1 - r2
         s["P1p" + c] += pr * qx - r1p; s["P2p" + c] += r1p - r2p
         L = s["L" + c]; S = s["S" + c]; J = s["J" + c]; D = s["D" + c]
-        org = (p["a" + c] + p["b" + c] * A[c]) * roomS * free
+        org = (p["a" + c] + p["b" + c] * (S + J)) * roomS * free * max(0.0, 1 - (s["K" + c] + L) / p["M" + c])
         convL = p["kc"] * u * L; convS = p["kc"] * u * S
         leaveJ = min(J, drain * J); leaveS = min(S, (p["lr"] * (1 - u) * keep + churnE) * S)
         leaveL = min(L, churnE * L)
@@ -886,46 +936,50 @@ START["social_contagion"], ADVANCE["social_contagion"] = start_social, adv_socia
 
 
 # ------------------------------------------------------------------ hospital queue
-# Fitted fluid queue (round G: E's structure refit on all runs incl. Round F, with the
-# orientation fade and the discharge report below). Patients arrive (base `lam` plus
+# Fitted fluid queue (round I: round G's structure plus "later" fatigue, refit on all runs
+# incl. the Round H 400-step hold). Patients arrive (base `lam` plus
 # electives into a list capped at `Emax`), wait, get admitted while occupancy < `Cs`,
 # and are discharged from step `dead` on, at most `mu` work units per step; an elective
 # needs `we` units. Arrivals past `Qmax` are referred elsewhere; waiting patients leave
 # at rate `r`.
-# mu = k * s_eff * diag_balance**hx * (1 + bo*ot) * (1 - fF*F) * (1 - phi*P)
+# mu = k * s_eff * diag_balance**hx * (1 + bo*ot) * (1 - fF*(F - fl*min(F, target))) * (1 - phi*P)
 #   s_eff: added staff, and staff moved between assessment and treatment by a diag
 #          change (|d change| * staffing), are only `eta` effective while orienting.
 #          tO > 0 (round G): that orientation load fades exponentially over tO steps, and
 #          staff cuts remove orienting staff first. tO = 0: E's hard window of To steps.
-#   F: fatigue. Lags overtime * min(1, waiting / Wf) over tF steps, so overtime only
-#      tires staff while patients are waiting.
+#   F: fatigue. Lags target = overtime * min(1, waiting / Wf) over tF steps, so overtime
+#      only tires staff while patients are waiting. Round I: a share fl of the fatigue that
+#      matches the current overtime costs nothing, so a steady overtime hold stays flat
+#      (Round H: discharges flat at 4.3 for 350 steps at overtime 0.7) and the cost shows
+#      once overtime is cut ("overtime can create later fatigue").
 #   P: follow-up program load, lags followup_capacity over tP steps (starts empty).
 # wait = EMA(alpha) of cw * waiting / (smoothed discharges + reneging). urgent_priority ignored.
 # Reported discharges below ~dm are shrunk by up to dq (the real ones come in lumps there).
 DEFAULTS["hospital_queue"] = dict(
-    lam=11.472858996847101,      # base arrivals per step
-    Emax=81.90136769069949,      # elective waiting-list cap
-    Qmax=325.42521185402114,     # total queue cap (overflow referred elsewhere)
-    r=0.015218500230854394,      # reneging fraction of waiting patients per step
-    Cs=84.9858241167475,         # service occupancy cap (chairs + beds)
-    k=1.0126857299194054,        # work per staff per step (regular-patient units) at balanced diag
-    phi=0.39962601219754734,     # staff share diverted by a full follow-up program
-    tP=63.818123063118705,       # follow-up program fill/empty time (steps)
+    lam=11.458291441286233,      # base arrivals per step
+    Emax=82.17273118516361,      # elective waiting-list cap
+    Qmax=329.6258149033101,      # total queue cap (overflow referred elsewhere)
+    r=0.01656084785507731,       # reneging fraction of waiting patients per step
+    Cs=96.06206437719332,        # service occupancy cap (chairs + beds)
+    k=1.0112045225693582,        # work per staff per step (regular-patient units) at balanced diag
+    phi=0.4014574479129759,      # staff share diverted by a full follow-up program
+    tP=66.05634059049068,        # follow-up program fill/empty time (steps)
     To=105.95822557579072,       # orientation window (steps), used only when tO = 0
-    eta=0.5519135709862397,      # effectiveness of staff during orientation
-    bo=0.2590795863495295,       # overtime work boost at full overtime
-    fF=0.4636855500346065,       # capacity lost at full fatigue
-    tF=102.01857511554621,       # fatigue build/recovery time (steps)
-    Wf=0.8881312798161165,       # waiting patients at which overtime fully fatigues
-    we=2.191586612530306,        # work per elective patient (regular patient = 1)
-    hx=0.6789212285835117,       # diag balance exponent (1 = linear tent peaked at 0.4)
-    cw=2.346179356494485,        # wait scale
-    tb=5.778645852985642,        # smoothing of recent discharges (steps)
-    alpha=0.045350594063182634,  # wait EMA weight
+    eta=0.5785203542250029,      # effectiveness of staff during orientation
+    bo=0.2626271284154454,       # overtime work boost at full overtime
+    fF=0.4355301805808154,       # capacity lost at full fatigue
+    tF=95.3489814474512,         # fatigue build/recovery time (steps)
+    Wf=0.6456960680299912,       # waiting patients at which overtime fully fatigues
+    we=2.0782915089581793,       # work per elective patient (regular patient = 1)
+    hx=0.6864400696018882,       # diag balance exponent (1 = linear tent peaked at 0.4)
+    cw=2.6028250939966933,       # wait scale
+    tb=5.944179388578482,        # smoothing of recent discharges (steps)
+    alpha=0.04283839671885026,   # wait EMA weight
     dead=2.0,                    # steps before the first discharge after reset
-    tO=22.22268517835332,        # >0: orientation fades exponentially over tO steps (To unused)
+    tO=24.587229407365562,       # >0: orientation fades exponentially over tO steps (To unused)
     dq=0.9,                      # reported-discharge shrink at low rates (0 = off)
-    dm=4.0,                      # discharge rate below which the shrink applies
+    dm=2.0,                      # discharge rate below which the shrink applies
+    fl=0.31233372437850215,      # share of fatigue that costs nothing while overtime continues (0 = round G)
 )
 
 
@@ -976,8 +1030,10 @@ def adv_hospital(s, a, p):
     h = max(0.0, min(dg / 0.4, (1.0 - dg) / 0.6))
     if p["hx"] != 1.0:
         h = h ** p["hx"]
-    s["F"] += (ot * min(1.0, s["wprev"] / max(p["Wf"], 1e-6)) - s["F"]) / max(p["tF"], 1.0)
-    otf = (1.0 + p["bo"] * ot) * max(0.0, 1.0 - p["fF"] * s["F"])
+    tgt = ot * min(1.0, s["wprev"] / max(p["Wf"], 1e-6))
+    s["F"] += (tgt - s["F"]) / max(p["tF"], 1.0)
+    fat = s["F"] - p.get("fl", 0.0) * min(s["F"], tgt)
+    otf = (1.0 + p["bo"] * ot) * max(0.0, 1.0 - p["fF"] * fat)
     mu = max(0.0, p["k"] * s_eff * h * otf * (1.0 - p["phi"] * s["P"]))
     W, E, Sr, Se = s["W"], s["E"], s["Sr"], s["Se"]
     Qprev = W + E + Sr + Se + s["Nr"] + s["Ne"]

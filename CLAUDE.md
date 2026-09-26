@@ -154,6 +154,18 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   output); no upload needed for that, the final zip will carry it. Gains were far smaller than on
   our held-out Round F runs.
 
+- Round I (Sep 26 Toronto, 4 agents, scratch `G/I/`): refit to the Round H long holds, each
+  re-verified independently before merging. Long-run fit (our ruler) current -> new: market 0.64 ->
+  0.94 (a "dealer hold" that ties up funding during a slow fall, gated on interest rate
+  0.035-0.085: a guess, since only the long run opens it), social_contagion 0.78 -> 0.98 (organic
+  growth fills a finite relationship-led audience, A ~92 / B ~79 ceiling), wildlife 0.80 -> 0.95
+  (food sets capacity, harvest saturates, predators die in transit; E structure replaced),
+  hospital_queue 0.86 -> 0.94 (part of overtime fatigue only bites after overtime stops).
+  Held-out Round F: market 0.899 -> 0.897, social 0.862 -> 0.864, wildlife 0.836 -> 0.861,
+  hospital 0.839 -> 0.839. Upload zip: `uploads/2026-09-26_I_four.zip` (not uploaded yet).
+  Revert sources if any drops: market / social / hospital from `uploads/2026-09-26_G_six.zip`,
+  wildlife from `uploads/2026-09-25_E_all_ten.zip`.
+
 ## Next steps
 
 1. Done Sep 24: `check_setup.py` passed, documents read (see Findings).
