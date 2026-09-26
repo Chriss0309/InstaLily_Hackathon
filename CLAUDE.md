@@ -179,6 +179,24 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   the public upload it came from. No public re-upload of market is needed: G's market score is
   on record and public does not carry into finals.
 
+- Round K (Sep 26 Toronto, 6 agents on the Round J data, scratch `J/`, every win re-run
+  independently with the shared harness `J/harness.py`). Ship rule: both rulers (std and d1);
+  honest J = the structure fitted WITHOUT the J run must predict J better than the shipped model
+  (+0.01 for a new structure); no older log more than 0.01 worse; 4,000-step gate and hold scan.
+  Merged into predict.py + models (honest J gain std/d1; all-logs std/d1 before -> after):
+  ad_auction B, purchases outside the core audience (breadth > 0.55) need 7x the fulfilment work
+  (+0.021/+0.026; 0.912/0.891 -> 0.926/0.909). power_grid B, reserve cap ~70-96 set by
+  interconnector + charging, slow + fast conventional generation with a ~55 floor, demand lags
+  price (+0.024/+0.026; 0.879/0.866 -> 0.912/0.901). reservoir B, outlet capacity ~ sqrt(level),
+  quality from surface + deep layers with flushing (+0.034/+0.030; 0.896/0.902 -> 0.918/0.934).
+  supply_chain B, two goods classes sold separately on the shelf, class 2 waits 12 steps before
+  the shared queue, e2 held >= 0.0046 (+0.054/+0.070; 0.869/0.769 -> 0.891/0.805). traffic A,
+  same equations refit (+0.010/+0.004; 0.862/0.853 -> 0.874/0.871). social_contagion A, overload
+  churn above ~340 members (A + B), cross-validated +0.004/+0.016 (0.923/0.766 -> 0.936/0.803).
+  No change: epidemic, market, wildlife, hospital_queue. Upload zip: `uploads/2026-09-26_K_six.zip`
+  (not uploaded yet). Revert source for any of the six: `uploads/2026-09-26_final_candidate_v1.zip`
+  (the block and model.json as of commit 3079e7a).
+
 ## Next steps
 
 1. Done Sep 24: `check_setup.py` passed, documents read (see Findings).
@@ -462,6 +480,28 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   discharges, shipments) are cheap to miss and smooth ones (speeds, wait time, prey, adopters,
   price, depth, inventories, level) are expensive. From now on a candidate must win on both
   rulers. Frozen sigmas: scratch `J/sigmas.json`; harness: scratch `J/harness.py`.
+- Round K data findings (agents' notes, the numbers re-checked):
+  power_grid: the reserve delivered at 70% (request 105) equals the full pulse's (150), so the
+  cap is below 105; the old model's two errors cancelled at 100% and only the 70% hold exposed
+  them. Interconnector vs charging never moved separately, so the cap's split is a guess.
+  supply_chain: sales ~28/step with both goods classes on the shelf, ~16 with class 1 alone;
+  the fitted class-2 stock effect e2 was ~0 and let retail run to 8,000+ at the 70% hold with
+  product_mix 0.5 (37,000 at mix 0), caught by a hold scan at the mix extremes and fixed by
+  holding e2 at the honest fit's 0.0046 (same scores, bounded: ~1,200 at mix 0.5). Shipments
+  step up 32 -> 35.5 once the dispatch queue fills. reservoir: capped outflow is one function of
+  level (16.6 at 921 down to 11.0 at 276), no sign of screen fouling; deep water starts ~0.007
+  better after reset; aeration 0.3 keeps the surface as clean as aeration 1; season ~67.8 steps.
+  traffic: route b looks the same at 70% and 100%; the persistent speed_a drop after pulses
+  grows with repeated pulses (~2 after two, ~3.7 after three), unmodeled. ad_auction:
+  conversions are exactly 0 on steps 1-2 after every reset; breadth 0.55 alone converts 7.3/step
+  with no backlog. social: the joint pulse levels off at A + B ~ 336-344; the reset dip is
+  proportional to the first reading (unmodeled); the seeding-then-incentive miss is still open.
+- Same-structure refits under the d1 ruler (Sep 26): market does not beat G (G is at its best
+  for its structure). epidemic's two observables keep the same ratio under both rulers, so the
+  weighting barely matters there. hospital gains +0.0096 d1 but its refit moved the follow-up
+  program so capacity at full follow-up fell just under arrivals: at the recovery action the
+  queue climbed 23 -> 105 after step 400 (no data that long); freezing tP and phi fixes the
+  drift but then std drops 0.008, so not shipped. Rule: always run the 4,000-step hold scan.
 
 
 ## More info please refer to the webpage: 

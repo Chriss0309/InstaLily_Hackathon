@@ -198,8 +198,9 @@ START["market"], ADVANCE["market"] = start_market, adv_market
 
 
 # ------------------------------------------------------------------ traffic
-# Round G (Sep 26): E's queue model plus a shared junction. Fitted on first look + round C + round F
-# (scratchpad G/traffic, fit_g.py). Per route r in (a, b):
+# Round G (Sep 26): E's queue model plus a shared junction (scratchpad G/traffic, fit_g.py).
+# Round J (Sep 26): same equations, params refit on first look + round C + round F + round J (250 steps
+# at the 70% pulse, then 150 at recovery; scratchpad J/traffic, fit_A.py). Per route r in (a, b):
 #   arrivals  = lam_r * ramp * (1 - ct * toll/5)   ramp = admitted demand; recovery (ramp 0) = empty road
 #   pipeline  arrivals reach the approach queue after D_r + dl_r * max(0, lane - lz) - T steps (= free-flow
 #             time to first exit; round C: b exits 11 steps after demand at lane 0.325, 16 at 0.65)
@@ -219,7 +220,8 @@ START["market"], ADVANCE["market"] = start_market, adv_market
 #             The first speed reading's offset from free speed decays separately at alpha0 (~0.28/step
 #             in every run; E tied it to alpha).
 #   memory    M_a += g * Q_a / (Q_a + qref_a) * (Mmax - M_a), never decays.
-# Fixed, not fitted: D_a, D_b, dl_b, lz, kd, T, w, ct (toll's demand effect is unidentified; E's 0.5).
+# Fixed, not fitted: D_a, D_b, dl_b, lz, kd, T, w, ct (toll's demand effect: no run has ramp > 0 at
+# toll > 2.5, so a fitted ct only moves an unobserved regime; kept at E's 0.5).
 # The initial flow reading is ignored: roads start empty.
 DEFAULTS["traffic"] = dict(
     D_a=11.0,
@@ -230,25 +232,25 @@ DEFAULTS["traffic"] = dict(
     kd=5.0,
     T=5.0,
     ct=0.5,
-    lam_a=25.646935185775515,
-    lam_b=27.33783139160665,
-    C_a=49.28042130937242,
-    C_b=29.905193947754046,
-    l_a=0.0002806675219054645,
-    l_b=0.5886290092806649,
-    qmax_a=461.11022667164855,
-    qmax_b=129.83109310390196,
-    qref_a=162.70212575625243,
-    qref_b=197.24293160554646,
-    vfree_a=49.09344017204464,
-    vfree_b=48.213102348325634,
-    alpha=0.12242938170568976,
-    alpha0=0.28154426235605523,
-    g=0.7741277277147407,
-    Mmax=2.896147749279153,
+    lam_a=27.02263109417189,
+    lam_b=24.365439918156284,
+    C_a=67.16894615915552,
+    C_b=29.37029654889871,
+    l_a=0.001522387918088238,
+    l_b=0.6127555410605433,
+    qmax_a=515.4252828714582,
+    qmax_b=138.21474865463236,
+    qref_a=190.52116304575256,
+    qref_b=183.69919863080182,
+    vfree_a=49.1715512266661,
+    vfree_b=48.7283718081734,
+    alpha=0.13974926702184665,
+    alpha0=0.29216846258712104,
+    g=0.6656356208115545,
+    Mmax=2.156616799149093,
     X_a=66.77297083384761,
-    X_b=16.5241460894861,
-    Jtot=176.1873795706308,
+    X_b=16.285982611881536,
+    Jtot=187.06334764173235,
     w=1.0,
 )
 
@@ -340,48 +342,64 @@ START["traffic"], ADVANCE["traffic"] = start_traffic, adv_traffic
 
 
 # ------------------------------------------------------------------ power grid
-# Fitted to all three research runs (first look + round C), scratchpad E/power_grid.
-# Load = price-elastic base demand + a fixed population of thermostatic cooling
-# loads (2 classes, 480 each, spread thermal time constants). Each load cools while on,
-# warms while off, and switches the moment its temperature reaches the deadband
-# limit that price shifts (exact crossing inside the step, so loads with different
-# time constants drift apart and a synchronized rebound dies out instead of
-# locking to whole-step cycles). The reading is the share of the step each load
-# ran. Every reset starts from the same asynchronous population at price 0.8; the
-# initial load reading's offset from base decays at rate rho.
+# Round J refit (scratchpad J/power_grid, candidate B), all four logs (first look,
+# round C, round F, round J 70% hold).
+# Load = base demand + a fixed population of thermostatic cooling loads (2 classes,
+# 480 each, spread thermal time constants). Each load cools while on, warms while
+# off, and switches the moment its temperature reaches the deadband limit that price
+# shifts (exact crossing inside the step, so loads with different time constants
+# drift apart and a synchronized rebound dies out). The reading is the share of the
+# step each load ran. Every reset starts from the same asynchronous population at
+# price 0.8.
+# Base demand lags its price-set desired level (brief: price reduces DESIRED
+# demand): it starts at the initial load reading and closes a fraction 1-rho of the
+# gap per step (data: every price step moves load ~80% at once, the rest over ~15
+# steps; step 1 of every run tracks the initial reading).
 # Frequency: supply - demand drives it, damping pulls it back. Conventional
-# generation G follows a governor (droop, response kg) around
-# g0 and is displaced by reserve. Reserve delivers min(request, q0) with ramp kq.
-# Charging allowance has no modeled effect (never moved alone in research; no
-# reserve depletion seen over 100 steps even at charging 0). Renewables
-# r0 + r1*interconnector, curtailed by delivered reserve (cq).
+# generation = slow dispatch setpoint (rate ks ~1/57, displaced by delivered
+# reserve) + fast governor droop (rate kg), inside output limits gmin..gmax (data:
+# after a reserve hold generation takes ~50 steps to come back; renewable share
+# tracks load swings within a few steps). Fitted floor ~55: under any reserve
+# hold conventional output sits at the floor, so frequency follows
+# supply - load through damping alone (data: ~34 power units per Hz there).
+# Reserve delivers min(request, cap) with ramp kq. cap = q0 + qa*(ic+charging)/2
+# (data: renewable curtailment, a proxy for delivered reserve, is the same at the
+# 70% pulse (request 105) as at the full pulse (150), so the cap is below 105;
+# more reserve arrives at interconnector 1 + charging 1: fitted cap ~70 at the
+# pulse settings, ~96 at recovery settings. The two controls always moved
+# together under reserve, so the even split between them is a guess.)
+# Renewables r0 + r1*interconnector, curtailed by delivered reserve (cq).
 # Share = renewables / (renewables + G + reserve).
 _PG_N = 480                 # cooling loads per class
 _PG_GOLD = 0.6180339887498949
 
 DEFAULTS["power_grid"] = dict(
-    s0=0.5942231497307183,    # thermostat band centre at price 0.8 (normalized temperature)
-    db=0.1461719451654106,    # thermostat deadband width
-    kap=0.06077917097107874,  # band shift per unit price above 0.8
-    tau0=104.21868686039369,  # thermal time constant, class 0 (steps)
-    tau1=81.43321232025225,   # thermal time constant, class 1 (steps)
-    h=0.3871541479382904,     # +/- spread of time constants within a class
-    W0=63.11771398715735,     # total power of class 0 cooling loads
-    W1=24.463065643241904,    # total power of class 1 cooling loads
-    B0=108.00856678810136,    # base load at price 0.8
-    e=0.1161950882666221,     # base-load drop per unit price above 0.8 (fraction)
-    rho=0.8161574306145789,   # per-step decay of the initial load reading's offset
-    kf=0.010831787230847283,  # Hz per unit power imbalance per step
-    df=0.21977813679052322,   # frequency damping per step
-    g0=66.42739154839518,     # conventional generation setpoint
-    droop=11.90888852049393,  # conventional power per Hz below 50
-    kg=0.18205496777007926,   # governor response per step
-    disp=0.5090986285343971,  # conventional displaced per unit reserve
-    r0=13.369593164414749,    # local renewables
-    r1=23.185024789034003,    # remote renewables at interconnector 1
-    cq=0.00597333061367036,   # renewable curtailment per unit reserve
-    q0=117.20437539180821,    # reserve power cap
-    kq=0.7265069035629227,    # reserve ramp per step
+    s0=0.5997461081462461,        # thermostat band centre at price 0.8 (normalized temperature)
+    db=0.12309073296195919,       # thermostat deadband width
+    kap=0.05076375588023307,      # band shift per unit price above 0.8
+    tau0=123.63141517011486,      # thermal time constant, class 0 (steps)
+    tau1=95.4467759072381,        # thermal time constant, class 1 (steps)
+    h=0.3803191813288195,         # +/- spread of time constants within a class
+    W0=67.30766742065039,         # total power of class 0 cooling loads
+    W1=22.483453547704116,        # total power of class 1 cooling loads
+    B0=108.93430536399443,        # load at price 0.8 (base demand + running cooling loads)
+    e=0.13886019548554632,        # desired base-demand drop per unit price above 0.8 (fraction of B0)
+    rho=0.8342667685781021,       # base demand keeps this fraction of its gap to desired, per step
+    kf=0.013798400468984642,      # Hz per unit power imbalance per step
+    df=0.46910896332402163,       # frequency damping per step
+    g0=67.63170664806327,         # conventional dispatch setpoint without reserve
+    droop=3.050960083364232,      # conventional power per Hz below 50 (fast governor)
+    kg=0.11813579579628114,       # fast governor response per step
+    ks=0.017490331169999856,      # slow dispatch response per step
+    disp=0.3071785088986796,      # dispatch setpoint drop per unit delivered reserve
+    gmin=54.83456083365457,       # conventional output floor
+    gmax=150.0,                   # conventional output ceiling (not binding in any run)
+    r0=11.115024965489186,        # local renewables
+    r1=26.814185778609957,        # remote renewables at interconnector 1
+    cq=0.00796327898964801,       # renewable curtailment per unit reserve
+    q0=67.2616135647811,          # reserve cap at interconnector 0 and charging 0
+    qa=28.567583145838718,        # extra reserve cap at interconnector 1 and charging 1
+    kq=0.9999999980000012,        # reserve ramp per step
 )
 
 
@@ -407,13 +425,14 @@ def start_power_grid(init, p):
     for k in range(len(on)):
         if on[k]:
             base += w[k]
-    return dict(a=aa, tau=tau, th=th, on=on, w=w, base=base, e0=_f(init, "load", p["B0"]) - p["B0"],
-                x=_f(init, "frequency", 50.0) - 50.0, G=p["g0"], Q=0.0)
+    return dict(a=aa, tau=tau, th=th, on=on, w=w, base=base, d=_f(init, "load", p["B0"]) - base,
+                x=_f(init, "frequency", 50.0) - 50.0, gs=p["g0"], gf=0.0, Q=0.0)
 
 
 def adv_power_grid(s, a, p):
     price = _clip(_f(a, "price_signal", 0.8), 0.0, 2.0)
     res = _clip(_f(a, "reserve_dispatch"), 0.0, 150.0)
+    ch = _clip(_f(a, "charging_allowance", 1.0), 0.0, 1.0)
     ic = _clip(_f(a, "interconnector"), 0.0, 1.0)
     # thermostatic loads: exact threshold crossing inside the step
     sp = p["s0"] + p["kap"] * (price - 0.8)
@@ -447,14 +466,17 @@ def adv_power_grid(s, a, p):
                 o = True
                 tot += w[k] * (1 - t1)
         on[k] = o
-    s["e0"] *= p["rho"]
-    load = p["B0"] * (1 - p["e"] * (price - 0.8)) + tot - s["base"] + s["e0"]
-    # reserve, renewables, conventional, frequency
-    s["Q"] += p["kq"] * (min(res, _pos(p["q0"])) - s["Q"])
+    # base demand lags its desired level
+    s["d"] += (1.0 - p["rho"]) * (p["B0"] * (1 - p["e"] * (price - 0.8)) - s["base"] - s["d"])
+    load = s["d"] + tot
+    # reserve, renewables, conventional (slow dispatch + fast governor), frequency
+    cap = _pos(p["q0"] + p["qa"] * 0.5 * (ic + ch))
+    s["Q"] += p["kq"] * (min(res, cap) - s["Q"])
     ren = (p["r0"] + p["r1"] * ic) * _pos(1.0 - p["cq"] * s["Q"])
-    gt = _pos(p["g0"] - p["disp"] * s["Q"] - p["droop"] * s["x"])
-    s["G"] += p["kg"] * (gt - s["G"])
-    sup = ren + s["G"] + s["Q"]
+    s["gs"] += p["ks"] * (p["g0"] - p["disp"] * s["Q"] - s["gs"])
+    s["gf"] += p["kg"] * (-p["droop"] * s["x"] - s["gf"])
+    g = _clip(s["gs"] + s["gf"], p["gmin"], p["gmax"])
+    sup = ren + g + s["Q"]
     s["x"] += p["kf"] * (sup - load) - p["df"] * s["x"]
     share = ren / sup if sup > 1e-6 else 0.0
     return {"load": load, "frequency": 50.0 + s["x"], "renewable_share": _clip(share, 0.0, 1.0)}
@@ -464,31 +486,42 @@ START["power_grid"], ADVANCE["power_grid"] = start_power_grid, adv_power_grid
 
 
 # ------------------------------------------------------------------ supply chain
-# Round G (scratchpad G/supply_chain), fitted to first look + round C + round F. Same chain as E:
-# production (2-step delay) -> supplier stock (ceiling) -> orders withdraw available stock
-# -> dispatch queue (withdrawals stop when it is full) -> forward transport (3-step conveyor)
-# -> receiving buffer -> receiving (rate x receiving_effort) -> retail -> sales.
-# Idle supplier stock turns unavailable; maintenance restores it.
-# G changes, from Round F: forward transport shares drive service with receiving and maintenance
-# (rate falls with both), and it slows as machine heat builds from transport work at high
-# receiving effort; maintenance cools it. Round F: transport ~34/step at receiving 1.5 and
-# maintenance 0, ~26 at maintenance 1; under a long stress at receiving 1.5 it falls to ~10 and
-# takes ~15 steps of maintenance to recover. At receiving 0.35 (reference pulse) no slowdown.
+# Round J (scratchpad J/supply_chain), fitted to first look + round C + round F + round J.
+# Chain as in G: production (2-step delay) -> supplier stock (ceiling) -> orders withdraw
+# available stock -> dispatch queue (withdrawals stop when it is full) -> forward transport
+# (3-step conveyor) -> receiving buffer -> receiving (rate x receiving_effort) -> retail -> sales.
+# Idle supplier stock turns unavailable; maintenance restores it. Transport shares drive service
+# with receiving and maintenance, and slows as machine heat builds at high receiving effort.
+# J change 1, two goods classes on the shelf, each sold separately: every run sells ~28/step in
+# its first 3 steps (both classes, fixed initial shares), ~15-18 once the shelf holds class 1
+# alone (pulse, 70% hold, recovery tails), ~28 again when class-2 goods arrive. Product mix sets
+# the class-1 share of each dispatch; classes keep their order through queue and buffer.
+# J change 2, class-2 goods spend 12 steps in their own intake before the shared queue, so under
+# congestion they reach the shelf late (~38 steps into the pulse, ~20 at the 70% hold, at once in
+# round C where nothing queues). The 70% hold's retail peak then eases toward class-1 balance.
+# J refit: production at partial maintenance (nm; only rounds C and J have 0 < maintenance < 1)
+# and the congestion ceiling q_max; the 70% hold refills supplier stock at ~step 90, not ~150.
+# e2 held at >= 0.0046 (the fit without round J): the data pin it only loosely, and near 0 it lets
+# class-2 stock grow without limit at low product mix with high throughput (no run goes there).
 DEFAULTS["supply_chain"] = dict(
     kp=32.26912568747066,     # production per step at production_effort 1, maintenance 0 (2-step delay)
-    dm=0.6748131010497238,    # share of production lost at full maintenance
-    nm=1.3883883637730448,    # maintenance exponent on that loss (loss = dm * maintenance**nm)
+    dm=0.6611589768053079,    # share of production lost at full maintenance
+    nm=2.1567601323545484,    # maintenance exponent on that loss (loss = dm * maintenance**nm)
     s_cap=361.8,              # supplier stock ceiling (calm reading)
     s_res=0.0,                # supplier stock that orders cannot withdraw
     ag=0.358267119804474,     # share of available supplier stock that turns unavailable per step while it sits
     tr=0.48422747215464135,   # share of unavailable stock made available again per step per unit maintenance
-    q_max=803.3180068301588,  # dispatch queue size where new withdrawals stop (congestion)
+    q_max=714.5843597563409,  # dispatched goods not yet transported where new withdrawals stop (congestion)
     trans=55.75717518194261,  # forward transport per step at zero receiving effort, maintenance and heat (3-step conveyor)
     b_max=192.43913634684716, # receiving buffer size where transport stops
     kr=51.51447025719483,     # receiving per step per unit receiving_effort
     dr=0.3558915209717783,    # share of receiving taken by full maintenance (shared drive service)
-    dem=16.468988960734052,   # base retail sales per step
-    e=0.01819208034794567,    # extra retail sales per step per unit of retail stock
+    d1=14.721648553383538,    # class-1 retail sales per step at an empty shelf
+    e1=0.009023432268020146,   # extra class-1 sales per step per unit of class-1 shelf stock
+    d2=11.190944989045953,    # class-2 retail sales per step at an empty shelf
+    e2=0.004600018015166459, # extra class-2 sales per step per unit of class-2 shelf stock
+    f2=0.4972468764725786,     # class-2 share of the initial retail stock
+    n2=12.0,                  # steps class-2 goods spend in their own intake before the shared queue
     tre=0.30292847130594425,  # share of transport lost per unit receiving_effort (shared drive service)
     tm=0.0896066244575284,    # share of transport lost per unit maintenance
     h0=3876.91706028572,      # machine heat where transport halves; 0 = off
@@ -500,12 +533,32 @@ DEFAULTS["supply_chain"] = dict(
 
 def start_supply(init, p):
     s = _pos(_f(init, "inventory_supplier"))
-    return dict(s=s, a=s, r=_pos(_f(init, "inventory_retail")), pp=[0.0, 0.0], q=0.0,
-                conv=[0.0, 0.0, 0.0], b=0.0, h=0.0)
+    r = _pos(_f(init, "inventory_retail"))
+    n2 = int(round(_clip(p["n2"], 0.0, 50.0)))
+    return dict(s=s, a=s, r1=r * (1.0 - p["f2"]), r2=r * p["f2"], pp=[0.0, 0.0],
+                q=[], qs=0.0, c2=[0.0] * n2, conv=[(0.0, 0.0)] * 3, b=[], bs=0.0, h=0.0)
+
+
+def _take(fifo, amt):
+    """Remove amt from the front of a FIFO list of [total, class2]; return the class-2 part."""
+    got2 = 0.0
+    while amt > 1e-12 and fifo:
+        tot, two = fifo[0]
+        if tot <= amt:
+            got2 += two
+            amt -= tot
+            fifo.pop(0)
+        else:
+            f = amt / tot
+            got2 += two * f
+            fifo[0] = [tot - amt, two * (1.0 - f)]
+            amt = 0.0
+    return got2
 
 
 def adv_supply(s, a, p):
     oq = _clip(_f(a, "order_quantity"), 0.0, 80.0)
+    mix = _clip(_f(a, "product_mix", 0.5), 0.0, 1.0)
     pe = _clip(_f(a, "production_effort", 1.0), 0.0, 1.5)
     re = _clip(_f(a, "receiving_effort", 1.0), 0.0, 1.5)
     mt = _clip(_f(a, "maintenance"), 0.0, 1.0)
@@ -517,24 +570,42 @@ def adv_supply(s, a, p):
         cap, res = cap - un, _pos(res - un)
     s["pp"].append(p["kp"] * pe * _pos(1.0 - p["dm"] * mt ** p["nm"]))
     av = min(av + s["pp"].pop(0), max(av, cap))
-    w = min(oq, _pos(av - res), _pos(p["q_max"] - s["q"]))
+    held = s["qs"] + sum(s["c2"])
+    w = min(oq, _pos(av - res), _pos(p["q_max"] - held))
     av -= w
     s["a"] = av
     s["s"] = av + un
-    s["q"] += w
+    # product mix sets the class-1 share of the dispatch; class 2 waits in its own intake first
+    w2 = w * (1.0 - mix)
+    if s["c2"]:
+        s["c2"].append(w2)
+        w2 = s["c2"].pop(0)
+        w = w - w * (1.0 - mix) + w2
+    if w > 0.0:
+        s["q"].append([w, w2])
+        s["qs"] += w
     tcap = p["trans"] * _pos(1.0 - p["tre"] * re - p["tm"] * mt)
     if p["h0"] > 0.0:
         tcap /= 1.0 + (s["h"] / p["h0"]) ** 4
-    t = min(s["q"], tcap, _pos(p["b_max"] - s["b"]))
+    t = min(s["qs"], tcap, _pos(p["b_max"] - s["bs"]))
     # machine heat: builds with transport work x drive load, cools slowly, maintenance cools it faster
     s["h"] = _pos(s["h"] + t * re ** p["hk"] - (p["hc"] + p["hm"] * mt) * s["h"])
-    s["q"] -= t
-    s["conv"].append(t)
-    s["b"] += s["conv"].pop(0)
-    recv = min(s["b"], p["kr"] * re * _pos(1.0 - p["dr"] * mt))
-    s["b"] -= recv
-    s["r"] = _pos(s["r"] + recv - min(s["r"] + recv, p["dem"] + p["e"] * s["r"]))
-    return {"shipments": recv, "inventory_supplier": s["s"], "inventory_retail": s["r"]}
+    t2 = _take(s["q"], t)
+    s["qs"] = _pos(s["qs"] - t)
+    s["conv"].append((t, t2))
+    arr, arr2 = s["conv"].pop(0)
+    if arr > 0.0:
+        s["b"].append([arr, arr2])
+        s["bs"] += arr
+    recv = min(s["bs"], p["kr"] * re * _pos(1.0 - p["dr"] * mt))
+    recv2 = min(_take(s["b"], recv), recv)
+    s["bs"] = _pos(s["bs"] - recv)
+    # the shelf sells each class separately
+    r1 = s["r1"] + recv - recv2
+    r2 = s["r2"] + recv2
+    s["r1"] = _pos(r1 - min(r1, p["d1"] + p["e1"] * s["r1"]))
+    s["r2"] = _pos(r2 - min(r2, p["d2"] + p["e2"] * s["r2"]))
+    return {"shipments": recv, "inventory_supplier": s["s"], "inventory_retail": s["r1"] + s["r2"]}
 
 
 START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
@@ -643,34 +714,46 @@ START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife
 
 
 # ------------------------------------------------------------------ reservoir
-# Grey-box fit to research data, first look + round C (Sep 25). Seasonal river inflow (sinusoid in
-# steps since reset), water balance with a hard spillway cap (excess leaves as spill in outflow),
-# delivery min(request, c0 + c1*level, water available), loss e0 + e1*level.
-# Bank storage: the reservoir exchanges kx*(H - level) per step with an aquifer whose head H starts
-# at H0 on every reset and relaxes toward the level at rate kh. A falling level draws water in (a
-# share ro of it shows in the inflow reading), a rising level loses some. No irrigation return
-# flow (round C: none seen in 90 steps of irrigation 8).
-# Quality: calm level qc, start-up transient from the first reading, a slow stress
-# memory m driven only by a joint push: u = excess of the mean 0..1 position (recovery -> pulse)
-# over th = 0.25, the most any one control alone can give.
+# Round J refit (Sep 26) on every paid run: first look, round C (one control at a time),
+# round F (order + spacing) and round J (250 steps at the 70% pulse, then 150 at recovery).
+# Water: seasonal river inflow (sinusoid in steps since reset), spillway cap at 941 (excess
+# leaves as spill in outflow), loss e0 + e1*level.
+# Delivery = min(request, outlet capacity, water available). Capacity grows with the square
+# root of the head, c0 + c1*sqrt(level) (orifice flow). Round J showed it: at levels 275-400
+# the old straight line was up to 0.7/step off; one curve fits 275-941 for every depth and
+# aeration setting.
+# Bank storage: the reservoir exchanges kx*(H - level) per step with an aquifer whose head H
+# starts at H0 on every reset and relaxes toward the level at rate kh. A falling level draws
+# water in (a share ro of it shows in the inflow reading), a rising level loses some.
+# Quality: two stored layers, read at the outlet by withdrawal depth w (0 = surface, 1 = deep):
+# quality = qc - (1-w)*S - w*D, plus a start-up transient from the first reading (tq).
+# S = surface deficit: slow calm drift s0; grows only when aeration is near zero,
+# sa*(1-aer)^na (round J: aeration 0.3 for 250 steps left the surface clean), faster during
+# deep withdrawal (1 + sw*w: a deep release changes the stored layers; round F order runs).
+# D = deep deficit: starts at D0 < 0 (the reset profile has better deep water: deep withdrawal
+# reads ~0.007 higher early on), grows in proportion to missing aeration (da) and relaxes
+# toward the surface at kd. Both recover at their own rate plus flushing, kf times the share
+# of stored water leaving per step (round J: at level ~300 with ~11/step out, quality levels
+# off within ~100 steps). Release and irrigation alone leave quality unchanged (round C, F).
 DEFAULTS["reservoir"] = dict(
-    A=11.279344763228828, B=2.2546514118561714, P=67.77337141928736, phi=0.015263764397348854,   # river = A + B*sin(2*pi*t/P + phi)
-    c0=9.082030387128691, c1=0.007593384533294581,   # delivery cap c0 + c1*level
-    e0=-0.19622625214888292, e1=0.0016530556531527793,   # loss per step e0 + e1*level
+    A=11.311063112274228, B=2.2254484682304327, P=67.82051362601999, phi=0.023315293531304966,   # river = A + B*sin(2*pi*t/P + phi)
+    c0=4.568004913413258, c1=0.39201795729701744,   # outlet capacity c0 + c1*sqrt(level)
+    e0=-0.023485257219978194, e1=0.0012596644753478103,   # loss per step e0 + e1*level
     Lcap=941.0,   # spillway level (measured, held fixed in the fit)
-    kx=0.01604774298401246, kh=0.1382750495811783, H0=533.7342773766807, ro=0.6840276588459931,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
-    qc=0.9596712525080192, qa=0.09123982053881292, tq=4.660674394054027,   # calm quality, memory weight, start-up time constant
-    g0=0.0013703030433965336, g=0.0035950058192401185, d=0.006089635459834917, th=0.25,   # memory: calm drive, stress drive, decay, drive shape
+    kx=0.005729233064621423, kh=0.03787895141137731, H0=435.59773769709494, ro=0.6413732880317944,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
+    qc=0.9557237762358463, tq=4.1289578456719145,   # calm quality, start-up time constant
+    s0=3.455440037355148e-05, sa=0.00012015648578010433, na=8.0, sw=0.7705429686376665, ks=0.0029492133683308723,   # surface: drift, no-aeration drive, its shape (fixed), deep-withdrawal boost, recovery
+    da=0.0003393066798193797, kd=0.010343836182189627, D0=-0.010176188908178603, kf=0.06443387496311355,   # deep: no-aeration drive, relaxation toward surface, reset value; flushing
 )
 
 
 def start_reservoir(init, p):
-    return dict(t=0, level=_pos(_f(init, "level")), q0=_f(init, "quality"), m=0.0, H=p["H0"])
+    return dict(t=0, level=_pos(_f(init, "level")), q0=_f(init, "quality"), H=p["H0"], S=0.0, D=p["D0"])
 
 
 def adv_reservoir(s, a, p):
-    aer = _f(a, "aeration", 1.0); irr = _pos(_f(a, "irrigation_allocation"))
-    rel = _pos(_f(a, "release_rate", 2.0)); depth = _f(a, "withdrawal_depth")
+    aer = _clip(_f(a, "aeration", 1.0), 0.0, 1.0); irr = _pos(_f(a, "irrigation_allocation"))
+    rel = _pos(_f(a, "release_rate", 2.0)); w = _clip(_f(a, "withdrawal_depth"), 0.0, 1.0)
     s["t"] += 1; t = s["t"]; L = s["level"]
     river = p["A"] + p["B"] * math.sin(2 * math.pi * t / p["P"] + p["phi"])
     G = p["kx"] * (s["H"] - L)
@@ -678,7 +761,8 @@ def adv_reservoir(s, a, p):
     inflow = river + (p["ro"] * G if G > 0 else 0.0)
     wet = river + G
     loss = p["e0"] + p["e1"] * L
-    dlv = min(rel + irr, max(p["c0"] + p["c1"] * L, 0.0), max(L + wet - loss, 0.0))
+    cap = p["c0"] + p["c1"] * math.sqrt(L)
+    dlv = min(rel + irr, max(cap, 0.0), max(L + wet - loss, 0.0))
     L = L + wet - dlv - loss
     spill = 0.0
     if L > p["Lcap"]:
@@ -686,11 +770,11 @@ def adv_reservoir(s, a, p):
     if L < 0:
         L = 0.0
     s["level"] = L
-    ub = _clip(((rel - 2.0) / 10.0 + irr / 8.0 + depth + (1.0 - aer)) / 4.0, 0.0, 1.0)
-    u = max(ub - p["th"], 0.0) / (1.0 - p["th"])
-    m = s["m"]
-    s["m"] = m + ((p["g0"] + p["g"] * u) * (1 - m) - p["d"] * m)
-    q = p["qc"] - p["qa"] * s["m"] + (s["q0"] - p["qc"]) * math.exp(-t / p["tq"])
+    F = (dlv + spill) / max(L, 1.0)   # share of the stored water leaving this step (flushing)
+    S = s["S"]; D = s["D"]
+    s["S"] = S + p["s0"] + p["sa"] * (1.0 - aer) ** p["na"] * (1.0 + p["sw"] * w) - (p["ks"] + p["kf"] * F) * S
+    s["D"] = D + p["da"] * (1.0 - aer) - p["kd"] * (D - S) - p["kf"] * F * D
+    q = p["qc"] - (1.0 - w) * s["S"] - w * s["D"] + (s["q0"] - p["qc"]) * math.exp(-t / p["tq"])
     return {"level": L, "inflow": inflow, "outflow": dlv + spill, "quality": q}
 
 
@@ -698,40 +782,48 @@ START["reservoir"], ADVANCE["reservoir"] = start_reservoir, adv_reservoir
 
 
 # ------------------------------------------------------------------ ad auction
-# Round E structural model, fitted on all research runs (first look + round C).
+# Round J structural model: Round E + audience-dependent fulfilment work, fitted on all
+# research runs (first look, round C, round F order/spacing, round J 70% hold).
 # Audience x in [0, 1] is cut into nested bins; breadth w targets x < w (a partly covered
 # bin counts fractionally). Each bin has reach R (repeated exposure removes people, back in
 # tauR), converted-unavailable V (back in tauV), attention A and pending purchases Q.
 # Win rate per bin saturates in bid, scaled by a conserved pool of rival capital K that
 # drifts toward where we bid and where reachable people are, and is boosted where reach
 # is thin. Budget pacing cuts win_rate by pace**kap. Purchase starts need follow-up
-# exposure (k1) plus a spontaneous part (k0); broader audiences convert less (cq);
-# completions share one fulfilment capacity F. Hidden state starts at the fixed reset
-# convention (full reach, empty pipeline, uniform rivals); the initial reading is ignored.
+# exposure (k1) plus a spontaneous part (k0); broader audiences convert less (cq).
+# Completions share one fulfilment capacity F (core purchases per step). A purchase from
+# outside the core audience (x > 0.55) needs W1 times the work: round F showed breadth
+# 0.55 alone reaching 7.3 conversions/step with no backlog, while every pulse reaching
+# past 0.55 plateaus at 5.2-5.8 and keeps converting 2-7 steps after it ends (round J:
+# spike to 7.6 while the backlog is mostly core, plateau 5.8, backlog empty at step 61).
+# W1 is held flat beyond 0.775 (no run targets that far). Hidden state starts at the
+# fixed reset convention (full reach, empty pipeline, uniform rivals); the initial
+# reading is ignored.
 AD_EDGES = [0.0, 0.55, 0.775, 1.0]
 AD_D = [AD_EDGES[i + 1] - AD_EDGES[i] for i in range(len(AD_EDGES) - 1)]
 DEFAULTS["ad_auction"] = dict(
-    wmax=0.6264306850620251,    # win_rate ceiling at high bid (fresh reach, rival pressure 1)
-    b0=3.748648874522589,       # bid scale of the win curve (scaled by local rival pressure K)
-    g=0.35222224813857317,      # win boost where reachable people are thin
-    vp=255.02490192982265,      # spend per unit reached-and-won at bid 1.5
-    pe=0.26954681761367283,     # price exponent in bid
-    kap=0.8966676216323695,     # pacing: win_rate x pace**kap (kap<1: bid shading, not pure throttling)
-    f=0.1077324468008594,       # reach lost per step per unit exposure
-    tauR=92.36064954122939,     # reach recovery time (steps)
-    a=1.1479499540027378,       # attention gained per unit impressions (x100)
-    k1=0.05129176694504404,     # follow-up: purchase starts per attention at exposure xr
-    k0=0.11709938423992625,     # spontaneous purchase starts per attention
+    wmax=0.6976841856757215,    # win_rate ceiling at high bid (fresh reach, rival pressure 1)
+    b0=4.196706126225343,       # bid scale of the win curve (scaled by local rival pressure K)
+    g=0.23506937881524861,      # win boost where reachable people are thin
+    vp=240.59025109200323,      # spend per unit reached-and-won at bid 1.5
+    pe=0.30106956762787446,     # price exponent in bid
+    kap=0.9568440530526832,     # pacing: win_rate x pace**kap (kap<1: bid shading, not pure throttling)
+    f=0.07985536088271657,      # reach lost per step per unit exposure
+    tauR=90.11929453188766,     # reach recovery time (steps)
+    a=1.1860742404258042,       # attention gained per unit impressions (x100)
+    k1=0.03879977863657136,     # follow-up: purchase starts per attention at exposure xr
+    k0=0.16803944679906646,     # spontaneous purchase starts per attention
     xr=0.26,                    # reference exposure for k1 (fixed)
-    k2=0.12437010286627279,     # pending -> completed rate
-    F=5.3429898348924985,       # fulfilment capacity (conversions per step)
-    v=0.0015854977437210016,    # converted customers made unavailable per conversion (per unit breadth)
-    tauV=20.512622290026798,    # time for converted customers to return (steps)
-    cq=2.641907315937337,       # conversion propensity falls as exp(-cq*x) across the audience
-    phi=0.5948239341169798,     # price rises with local rival pressure K**phi
-    rho=0.7081650682086872,     # rival capital pulled toward where we bid (conserved pool)
-    tauK=33.02093949898502,     # rival capital relocation time (steps)
-    mu=0.7060571762624779,      # rival capital pulled toward reachable people
+    k2=0.0964909558652435,      # pending -> completed rate
+    F=10.388282856804741,       # fulfilment capacity (core purchases per step)
+    W1=7.071413158784073,       # fulfilment work per purchase outside the core audience (core = 1)
+    v=0.0019641043057240797,    # converted customers made unavailable per conversion (per unit breadth)
+    tauV=22.06587768896608,     # time for converted customers to return (steps)
+    cq=2.9219323419764,         # conversion propensity falls as exp(-cq*x) across the audience
+    phi=0.31923921522105014,    # price rises with local rival pressure K**phi
+    rho=0.37102537507148814,    # rival capital pulled toward where we bid (conserved pool)
+    tauK=26.133068834258516,    # rival capital relocation time (steps)
+    mu=0.5963098102001345,      # rival capital pulled toward reachable people
 )
 
 
@@ -744,7 +836,8 @@ def _ad_binavg_exp(c, e0, e1):
 def start_ad(init, p):
     nb = len(AD_D)
     return dict(R=[1.0] * nb, V=[0.0] * nb, A=[0.0] * nb, Q=[0.0] * nb, K=[1.0] * nb,
-                qx=[_ad_binavg_exp(-p["cq"], AD_EDGES[i], AD_EDGES[i + 1]) for i in range(nb)])
+                qx=[_ad_binavg_exp(-p["cq"], AD_EDGES[i], AD_EDGES[i + 1]) for i in range(nb)],
+                wk=[1.0] + [p["W1"]] * (nb - 1))
 
 
 def adv_ad(s, a, p):
@@ -778,8 +871,9 @@ def adv_ad(s, a, p):
         It += vol[i] * Wu[i]
     win = It * wf / Vt if Vt > 0 else 0.0
     D = 0.0
+    wk = s["wk"]
     for i in range(nb):
-        D += k2 * Q[i]
+        D += k2 * Q[i] * wk[i]
     sF = F / D if D > F else 1.0
     conv = 0.0
     bf = b * pace ** (1.0 - kap) / 1.5
@@ -805,7 +899,7 @@ START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 
 
 # ------------------------------------------------------------------ social contagion
-# Fitted structural model (round I: round G + finite relationship-led audiences M). Per community: core members K (the initial (1-f) share,
+# Fitted structural model (round J: round I + overload churn). Per community: core members K (the initial (1-f) share,
 # never leave), loyal recruits L (organic + bridge introductions), seeded recruits S,
 # incentive-led members J (the initial f share, promised cohorts, converts), disappointed former
 # members D, and people who could still join P = N - members - D - queued (finite community N).
@@ -820,31 +914,38 @@ START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 # (a + b*(S + J)) x workforce room x P/N x (1 - (K + L)/M) goes to L: it fills a finite
 # relationship-led audience M (round H long hold: no outreach settles near A 92, B 75-79), and
 # seeded / incentive-led members crowd it out (b <= 0 in practice).
+# Round J, overload churn: the onboarding workforce also serves existing members. Above `No`
+# members (A + B) it can't keep up, and every non-core member (L, S, J) leaves at
+# co x ((A + B)/No - 1) per step, incentive or not. Fitted co is steep, so this is a ceiling
+# near No: the base joint pulse levels off at A 201 + B 135 = 336 (round I kept climbing to
+# A 275 + B 237 = Nt on long pulse holds), and c1's seeding alone peaked at 344.
 DEFAULTS["social_contagion"] = dict(
-    f=0.5923510727698302,         # share of initial members who are incentive-led (leave at reset)
-    lam=0.06305012808425219,       # incentive-led drain per step at zero incentive
-    tq=5.064048134444638,         # steps per local onboarding stage (2 stages)
-    tq2=33.45617289272342,       # steps per bridge-introduction stage (2 stages)
-    sa=1.5864212644549838,         # A queue entries per unit seeding (times 1 - bridge)
-    sb=0.3836912827340671,       # B queue entries per unit seeding (bridge share goes via introductions)
-    Nt=512.5682465286342,         # shared onboarding capacity (A + B members)
-    aa=1.191710611007864,        # organic growth A per step (times room)
-    ab=0.7388055464438019,       # organic growth B per step (times room)
-    ba=-0.016600631807513623,     # organic growth per seeded / incentive-led member A (crowding)
-    bb=-0.0020671914338718784,      # organic growth per seeded / incentive-led member B (crowding)
-    kc=0.11040981739394469,       # recruits converted to incentive-led per step at full incentive
-    lr=0.008480361139482055,      # seeded-recruit churn per step at zero incentive
-    lamM=0.18934179083944339,      # recruit churn per step per unit of unmet incentive expectation
-    tau_e=12.257803612357996,     # incentive expectation time constant (steps)
-    phi=0.018147059533629058,                      # share of queue entries promised at full incentive
-    m=0.07639907936240715,                        # extra seeded recruitment at full incentive (x (1 + m*u))
-    Na=359.5096833010329,                       # community size A
-    Nb=432.8338930456915,                       # community size B
-    tau_d=1.0000000076683415,                   # steps before a disappointed former member reconsiders
-    kr=14.64531814616158,                       # churn reduction from cross-community relationships (1/(1 + kr*R))
-    tau_r=826.2036008778531,                   # relationship memory R: EMA of bridge outreach over tau_r steps
-    Ma=92.3969717464778,                     # relationship-led audience A: organic growth stops as core + loyal reach it
-    Mb=79.3050402286664,                     # relationship-led audience B
+    f=0.5115883429778939,         # share of initial members who are incentive-led (leave at reset)
+    lam=0.07802907283601557,       # incentive-led drain per step at zero incentive
+    tq=5.248659047777971,         # steps per local onboarding stage (2 stages)
+    tq2=27.910082690290107,       # steps per bridge-introduction stage (2 stages)
+    sa=1.4080054258024688,         # A queue entries per unit seeding (times 1 - bridge)
+    sb=0.32362953490601726,       # B queue entries per unit seeding (bridge share goes via introductions)
+    Nt=1059.6505720129899,         # shared onboarding capacity (A + B members)
+    aa=0.9534459880045454,        # organic growth A per step (times room)
+    ab=0.6543247756090418,       # organic growth B per step (times room)
+    ba=-0.011191491090078892,     # organic growth per seeded / incentive-led member A (crowding)
+    bb=-7.881267527842448e-07,      # organic growth per seeded / incentive-led member B (crowding)
+    kc=0.07802913833631368,       # recruits converted to incentive-led per step at full incentive
+    lr=0.010641580595212169,      # seeded-recruit churn per step at zero incentive
+    lamM=0.1376270736230053,      # recruit churn per step per unit of unmet incentive expectation
+    tau_e=12.524193149468623,     # incentive expectation time constant (steps)
+    phi=0.1406473875740199,                      # share of queue entries promised at full incentive
+    m=0.2198384342939869,                        # extra seeded recruitment at full incentive (x (1 + m*u))
+    Na=350.43093056749103,                       # community size A
+    Nb=300.8264516873275,                       # community size B
+    tau_d=1.0000000000184888,                   # steps before a disappointed former member reconsiders
+    kr=52.661194558649385,                       # churn reduction from cross-community relationships (1/(1 + kr*R))
+    tau_r=3204.049653164439,                   # relationship memory R: EMA of bridge outreach over tau_r steps
+    Ma=93.25997717485042,                     # relationship-led audience A: organic growth stops as core + loyal reach it
+    Mb=79.33291466553214,                     # relationship-led audience B
+    co=1.5425675743912917,                                  # overload churn per step per unit of members above No (round J)
+    No=340.23902190699846,                                # members (A + B) the shared workforce can support (round J)
 )
 
 
@@ -870,6 +971,7 @@ def adv_social(s, a, p):
     churnE = p["lamM"] * max(0.0, s["E"] - 2 * u)
     A = {c: s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c] for c in ("a", "b")}
     roomS = max(0.0, 1 - (A["a"] + A["b"]) / p["Nt"])
+    over = p["co"] * max(0.0, (A["a"] + A["b"]) / p["No"] - 1)
     g = seed * roomS * (1 + p["m"] * u)
     out = {}
     for c, loc, obs in (("a", p["sa"] * (1 - br), "adopters_a"), ("b", p["sb"] * (1 - br), "adopters_b")):
@@ -889,8 +991,8 @@ def adv_social(s, a, p):
         L = s["L" + c]; S = s["S" + c]; J = s["J" + c]; D = s["D" + c]
         org = (p["a" + c] + p["b" + c] * (S + J)) * roomS * free * max(0.0, 1 - (s["K" + c] + L) / p["M" + c])
         convL = p["kc"] * u * L; convS = p["kc"] * u * S
-        leaveJ = min(J, drain * J); leaveS = min(S, (p["lr"] * (1 - u) * keep + churnE) * S)
-        leaveL = min(L, churnE * L)
+        leaveJ = min(J, (drain + over) * J); leaveS = min(S, (p["lr"] * (1 - u) * keep + churnE + over) * S)
+        leaveL = min(L, (churnE + over) * L)
         s["J" + c] = max(0.0, J + o2p + r2p + convL + convS - leaveJ)
         s["S" + c] = max(0.0, S + (o2 - o2p) - convS - leaveS)
         s["L" + c] = max(0.0, L + (r2 - r2p) + org - convL - leaveL)
