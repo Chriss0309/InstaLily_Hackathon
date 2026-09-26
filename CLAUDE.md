@@ -218,7 +218,7 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
    hospital_queue 70% pulse 400 (leaves 0). Public uploads replace the "final check" reserve.
    `foreach ($s in ...) { python collect_runs.py $s "file:schedules/h1.json#$s.long" --out "research\${s}_h1.json" }`
 
-8. Round J (proposed Sep 26, NOT run, needs Chris's OK): the five systems with steps left, one
+8. Done Sep 26 (approved and run by Chris, see Findings): Round J, the five systems with steps left, one
    run each from reset: 250 steps at the 70% pulse, then 150 at recovery (`schedules/j1.json`,
    2,000 steps, validated free against the plan parser). Leaves traffic 425, ad_auction 220,
    supply_chain 195, reservoir 120, power_grid 0. Why: wildlife's +0.09 came from the Round H
@@ -442,6 +442,26 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   at its step 100. The model converts too many seeded recruits to incentive-led members when
   membership is high (brief: the onboarding workforce is shared with existing members). The
   `xy` order and the 500-step recovery hold fit well. That is the next social model round.
+- Round J collected Sep 26 (~13:21-13:29 Toronto): all 5 runs complete (400 steps each) and
+  match `schedules/j1.json`. Steps left: traffic 425, ad_auction 220, supply_chain 195,
+  reservoir 120, power_grid 0. Current models on unseen J (std proxy): ad_auction 0.875,
+  reservoir 0.855, supply_chain 0.836, power_grid 0.828, traffic 0.827. Misses at 70%:
+  supply_chain supplier stock empties in 3 steps (model 50) and refills at step ~75-100 (model
+  150+), retail peaks ~740 (model 844); traffic flows 14-15 (model 9-12), speed_a 12.5 (model
+  10), queue released faster after the stress; power_grid frequency ~0.5 too low all phase;
+  reservoir quality holds 0.94-0.96 (model drifts to 0.93); ad_auction conversions spike to 7
+  at step 20 then settle 4.2 (model flat 5.3).
+- The ruler (Sep 26, free, scratch `J/ruler*.py`): for every public-scored version (E, G, I; 20
+  system-version pairs) we scored that exact code on our runs under several sigma definitions.
+  sigma = 5.6 x (pooled std of one-step changes), "d1", tracks public best: on runs a version
+  had not seen, mean miss 0.067 and correlation +0.74 (our std sigma: 0.088 at its best scale,
+  correlation +0.42; unscaled std sigma: 0.105). d1 hits social exactly (E 0.499 vs public
+  0.497, G 0.512 vs 0.511) and market E (0.623 vs 0.622). Still off: epidemic (d1 0.836 vs
+  public 0.687, so the hidden episodes show epidemic behavior our runs never did) and
+  supply_chain (d1 too harsh by ~0.1-0.19). Under d1 lumpy observables (traffic flows, hospital
+  discharges, shipments) are cheap to miss and smooth ones (speeds, wait time, prey, adopters,
+  price, depth, inventories, level) are expensive. From now on a candidate must win on both
+  rulers. Frozen sigmas: scratch `J/sigmas.json`; harness: scratch `J/harness.py`.
 
 
 ## More info please refer to the webpage: 
