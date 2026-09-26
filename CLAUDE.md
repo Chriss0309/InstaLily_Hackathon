@@ -135,6 +135,15 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   beat Upload 1, so nothing was reverted. Smallest gain: social_contagion (+0.05), now the weakest.
   E was fitted on Round C, so Round C is no longer a holdout for it; Round F is.
 
+- Round G (Sep 26 Toronto, workflow of 6 agents, scratch `G/`): each system refit on all paid data
+  (first look + C + F), judged by one shared harness (frozen sigma, hold out one Round F variant,
+  refit on the rest, rotate). Ship rule: held-out Round F mean >= E + 0.01, in-sample first-look
+  and Round C each no more than 0.01 below E, 4,000-step crash/blow-up gate passes. Every claimed
+  win was re-run independently with the agent's own fit code before merging. Merged into
+  predict.py + models: hospital_queue (held-out F 0.795 -> 0.839), supply_chain (0.695 -> 0.789),
+  wildlife (0.836 -> 0.874), traffic (0.745 -> 0.764), market (0.880 -> 0.899). The other five are
+  byte-identical to E. social_contagion did not ship (see Findings).
+
 ## Next steps
 
 1. Done Sep 24: `check_setup.py` passed, documents read (see Findings).
@@ -308,6 +317,30 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   epidemic and ad_auction hold up.
 - E's code, checked Sep 26: 40 random 4,000-step episodes per system (holds of 1 to 4,000 steps)
   are all finite and non-negative. power_grid is the slowest at 16 s for 40 (limit 1,200 s).
+- Round G findings (agents' notes, checked against data where stated):
+  hospital_queue: the slow recovery after every pulse is staff orientation that fades over ~22
+  steps (same after 15, 25 and 100-step pulses), not fatigue that builds up. Follow-up 0 at calm
+  changes nothing for 130 steps, so returning case mix is probably inactive. Discharges under
+  stress come in lumps (mostly 0, batches of 3-9), so the model shrinks low discharge
+  predictions toward the median (a scoring choice). traffic: flows are deterministic lumps and
+  cap any smooth model near 0.70-0.76 on flows; speeds carry the gains. The junction holds
+  crossing vehicles ~5 steps plus an exit store shared by both routes; route b's delay depends on
+  lane closure (11 steps at 0.325, 16 at 0.65). Toll's effect on demand is unidentified (no run
+  has ramp > 0 with toll 5). supply_chain: forward transport is the bottleneck and its rate moves
+  (~34/step under stress, 25-27 at recovery); throughput collapses under long stress at high
+  receiving effort (machine heat/wear), so 4,000 steps at receiving 1.5 + maintenance 0 now
+  predict ~2.4/step shipments (untested beyond ~80 steps). wildlife: prey regrows at ~0.18-0.20
+  per step after any pulse; the overshoot size depends on how long prey stayed low (food sets
+  capacity); hunting removes about a fixed count per step with a floor near 7. market: joint
+  rate+tax pulses hold price flat ~12 steps then fall to a 65.9 floor; rate alone plateaus at
+  72.2; while tax is on, committed price moves don't reverse (xy keeps falling after the rate
+  ends); volume/depth only move while price moves.
+- social_contagion (not shipped in Round G): the best candidate fixes E's too-fast post-pulse
+  crash (held-out F 0.812 -> 0.860) but missed the Round C floor by 0.0016. Bigger problem, in E
+  and every candidate: at the recovery action B keeps growing for thousands of steps (E: B 321 at
+  step 4,000; data after every pulse settles A ~45-75, B ~35-65, and growth slows as B rises).
+  Our runs are <= 420 steps, so the long-run ceiling is unidentified. This may be most of the
+  0.497 public score (10 of 40 episodes are long holds).
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
   intervention order, recovery spacing, joint intervention.
 

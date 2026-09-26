@@ -132,25 +132,36 @@ START["epidemic"], ADVANCE["epidemic"] = start_epidemic, adv_epidemic
 
 
 # ------------------------------------------------------------------ market
-# Round E fit on all three research runs (first look + round C single-control run).
-# Price follows its target through a two-stage lag (lag, ramp, plateau), stage 1 is faster falling (k_p)
-# than recovering (k_pu): round C rate on t50 = 29 steps, rate off t50 = 70 steps.
-# Volume and depth relax first-order. Calm levels are fitted constants, not the first reading.
+# Round G (scratchpad G/market). Price follows its target through a two-stage lag:
+# stage 1 (pf, committed orders) is faster falling (k_p) than recovering (k_pu), stage 2
+# (execution) follows pf at k_p2. Round F showed transaction tax changes how the rate
+# moves price: joint pulses fall later but deeper (floor ~65.9 vs ~72.2 for rate alone),
+# and a rate drop keeps going under a following tax (no recovery while tax is on). So:
+#   c_t1: tax slows stage 1 in both directions (k / (1 + c_t1 * tax/0.05)).
+#   a_amp: tax deepens the committed move at execution: (p0 - pf) * (1 + a_amp * tax/0.05).
+#   a_rate_p, a_amp are held at the observed plateaus (c1 rate-alone 72.2, base joint 65.9)
+#   so long holds settle where the data settled.
+#   b_vp, b_dp: volume rises and depth falls while price is moving (per unit |price step|).
+# Volume and depth otherwise relax first-order. Calm levels are fitted constants.
 # a_tax_v and a_rate_v stay tied (a_tax_v = 2 * a_rate_v); keep the tie when refitting.
 DEFAULTS["market"] = dict(
-    p0=93.81467991644752,  # calm price level (0 = take from initial)
-    v0=1.886058677676455,  # calm volume level (0 = take from initial)
-    d0=90.63434257445736,  # calm depth level (0 = take from initial)
-    a_rate_p=3.1467327979958792,  # price target falls a_rate_p * interest_rate
-    a_tax_v=-1.0829051252047697,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
-    a_rate_v=-0.5414525626023848,  # volume target falls a_rate_v * interest_rate
-    a_vol_d=-0.012858346757379126,  # depth target change per unit of volume above baseline
-    a_tax_d=10.975679806459524,  # depth target falls a_tax_d * tax
-    k_p=0.04372360873249523,  # price lag stage 1, target below pf (falling)
-    k_pu=0.023888161002877387,  # price lag stage 1, target above pf (recovering)
-    k_p2=0.04137618323073983,  # price lag stage 2
-    k_v=0.305597708318972,  # volume relaxation rate
-    k_d=0.12230677632502787,  # depth relaxation rate
+    p0=94.18772,  # calm price level (0 = take from initial)
+    v0=1.84674,  # calm volume level (0 = take from initial)
+    d0=90.97057,  # calm depth level (0 = take from initial)
+    a_rate_p=2.33,  # price target falls a_rate_p * interest_rate (fixed: rate plateau)
+    a_tax_v=1.04083,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
+    a_rate_v=0.52041,  # volume target falls a_rate_v * interest_rate
+    a_vol_d=-0.0129,  # depth target change per unit of volume above baseline
+    a_tax_d=10.80974,  # depth target falls a_tax_d * tax
+    k_p=0.10511,  # price lag stage 1, target below pf (falling)
+    k_pu=0.01744,  # price lag stage 1, target above pf (recovering)
+    k_p2=0.03586,  # price lag stage 2
+    k_v=0.30562,  # volume relaxation rate
+    k_d=0.12142,  # depth relaxation rate
+    c_t1=2.63671,  # tax slows price stage 1
+    a_amp=0.289,  # tax deepens the committed price move (fixed: joint floor)
+    b_vp=1.79483,  # volume target rise per unit |price step|
+    b_dp=7.91325,  # depth target drop per unit |price step|
 )
 
 
@@ -167,14 +178,19 @@ def start_market(init, p):
 def adv_market(s, a, p):
     r = _pos(_f(a, "interest_rate"))
     tax = _pos(_f(a, "transaction_tax"))
-    tp = s["p0"] * (1 - p["a_rate_p"] * r)
-    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r)
-    td = s["d0"] * _pos(1 - p["a_vol_d"] * (s["volume"] / s["v0"] - 1) - p["a_tax_d"] * tax)
+    g = tax / 0.05
+    tp = s["p0"] * _pos(1 - p["a_rate_p"] * r)
     k1 = p["k_pu"] if tp > s["pf"] else p["k_p"]
-    s["pf"] += _clip(k1, 0, 1) * (tp - s["pf"])
-    s["price"] += _clip(p["k_p2"], 0, 1) * (s["pf"] - s["price"])
+    s["pf"] += _clip(k1, 0, 1) / (1 + _pos(p.get("c_t1", 0.0)) * g) * (tp - s["pf"])
+    q = _pos(s["p0"] - (s["p0"] - s["pf"]) * (1 + _pos(p.get("a_amp", 0.0)) * g))
+    old = s["price"]
+    s["price"] += _clip(p["k_p2"], 0, 1) * (q - s["price"])
+    dp = abs(s["price"] - old)
+    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r) + _pos(p.get("b_vp", 0.0)) * dp
+    td = s["d0"] * _pos(1 - p["a_vol_d"] * (s["volume"] / s["v0"] - 1) - p["a_tax_d"] * tax) \
+        - _pos(p.get("b_dp", 0.0)) * dp
     s["volume"] += _clip(p["k_v"], 0, 1) * (tv - s["volume"])
-    s["depth"] += _clip(p["k_d"], 0, 1) * (td - s["depth"])
+    s["depth"] += _clip(p["k_d"], 0, 1) * (_pos(td) - s["depth"])
     return {"price": s["price"], "volume": s["volume"], "depth": s["depth"]}
 
 
@@ -182,49 +198,78 @@ START["market"], ADVANCE["market"] = start_market, adv_market
 
 
 # ------------------------------------------------------------------ traffic
-# Queue model, refitted on all research runs incl. round C (Sep 25). Per route r in (a, b):
+# Round G (Sep 26): E's queue model plus a shared junction. Fitted on first look + round C + round F
+# (scratchpad G/traffic, fit_g.py). Per route r in (a, b):
 #   arrivals  = lam_r * ramp * (1 - ct * toll/5)   ramp = admitted demand; recovery (ramp 0) = empty road
-#   pipeline  arrivals reach the junction queue after D_r steps
-#   capacity  = C_r * share_r * (1 - l_r * lane)   share_a = signal_timing, share_b = 1 - signal_timing
-#   queue     Q_r <= qmax_r, flow_r = min(Q_r, capacity)
-#   speed     EMA toward (vfree_r - M_r) / (1 + (Q_r + F_r) / qref_r), M_b = 0
-#             F_r = vehicles in the pipeline as they were kd steps ago (round C: speeds move ~5 steps late)
-#   memory    M_a += g * Q_a / (Q_a + qref_a) * (Mmax - M_a), never decays. Only a standing queue on a
-#             feeds it: speed_a stays ~2.3 low after the pulse, but not after 120 steps of free-flowing mid traffic.
+#   pipeline  arrivals reach the approach queue after D_r + dl_r * max(0, lane - lz) - T steps (= free-flow
+#             time to first exit; round C: b exits 11 steps after demand at lane 0.325, 16 at 0.65)
+#   approach  Q_r <= qmax_r (excess rejected)
+#   admission = min(Q_r, C_r * share_r * lf_r)     share_a = signal_timing, share_b = 1 - signal_timing
+#             lf_r = 1 - l_r * lane_closure
+#   junction  admitted vehicles cross for T steps, then wait in an exit store R_r that empties at
+#             X_r * lf_r per step (flow_r). Crossing + waiting vehicles of BOTH routes share Jtot of
+#             room; when it is full, admissions of both routes are scaled down (one route obstructs the
+#             other). Round F: after a signal reversal the old route keeps flowing ~5-10 steps, and the
+#             drained stock after a sig 0.85 pulse is 1,500 vs ~940 after sig 0.15. Room is checked
+#             before this step's departures, so a full junction admits in bursts (period ~6 flow pattern
+#             under heavy demand at lane 0); real flows are just as lumpy and smoothing it scored worse.
+#   speed     EMA (alpha) toward (vfree_r - M_r) / (1 + n_r / qref_r), n_r = Q_r + junction_r +
+#             max(w * pipeline now, pipeline kd steps ago): speeds fall on the first pulse step, but
+#             stay low ~5 steps after demand stops (round C). M_b = 0.
+#             The first speed reading's offset from free speed decays separately at alpha0 (~0.28/step
+#             in every run; E tied it to alpha).
+#   memory    M_a += g * Q_a / (Q_a + qref_a) * (Mmax - M_a), never decays.
+# Fixed, not fitted: D_a, D_b, dl_b, lz, kd, T, w, ct (toll's demand effect is unidentified; E's 0.5).
 # The initial flow reading is ignored: roads start empty.
 DEFAULTS["traffic"] = dict(
     D_a=11.0,
-    D_b=16.0,
+    D_b=11.0,
+    dl_a=0.0,
+    dl_b=15.4,
+    lz=0.325,
     kd=5.0,
+    T=5.0,
     ct=0.5,
-    lam_a=26.28574311063386,
-    lam_b=27.705894747007093,
-    C_a=38.292724019749464,
-    C_b=33.13338646725439,
-    l_a=7.297199579789583e-09,
-    l_b=0.9138174180679676,
-    qmax_a=442.43203037474916,
-    qmax_b=123.49544644002185,
-    qref_a=176.48953469147457,
-    qref_b=306.1687847839545,
-    vfree_a=49.03225604777348,
-    vfree_b=48.60161068384281,
-    alpha=0.20189943691122356,
-    g=0.06158071225790588,
-    Mmax=3.3192311035196593,
+    lam_a=25.646935185775515,
+    lam_b=27.33783139160665,
+    C_a=49.28042130937242,
+    C_b=29.905193947754046,
+    l_a=0.0002806675219054645,
+    l_b=0.5886290092806649,
+    qmax_a=461.11022667164855,
+    qmax_b=129.83109310390196,
+    qref_a=162.70212575625243,
+    qref_b=197.24293160554646,
+    vfree_a=49.09344017204464,
+    vfree_b=48.213102348325634,
+    alpha=0.12242938170568976,
+    alpha0=0.28154426235605523,
+    g=0.7741277277147407,
+    Mmax=2.896147749279153,
+    X_a=66.77297083384761,
+    X_b=16.5241460894861,
+    Jtot=176.1873795706308,
+    w=1.0,
 )
+
+_TRAFFIC_RING = 64
 
 
 def start_traffic(init, p):
-    s = {"M": 0.0}
+    s = {"M": 0.0, "t": 0}
     kd = max(int(round(p["kd"])), 0)
+    T = max(int(round(p["T"])), 0)
     for r in ("a", "b"):
         v = _f(init, "speed_" + r, p["vfree_" + r])
-        s["V" + r] = v if math.isfinite(v) else p["vfree_" + r]
+        s["V" + r] = p["vfree_" + r]   # hidden state: empty road at free speed
+        s["O" + r] = v - p["vfree_" + r] if math.isfinite(v) else 0.0   # reading offset, decays at alpha0
         s["Q" + r] = 0.0
-        s["P" + r] = [0.0] * max(int(round(p["D_" + r])), 1)
+        s["P" + r] = [0.0] * _TRAFFIC_RING   # arrivals due at step (index mod ring)
         s["F" + r] = 0.0   # vehicles in the pipeline
         s["H" + r] = [0.0] * kd   # pipeline load, kd steps late
+        s["X" + r] = [0.0] * T    # vehicles crossing the junction
+        s["S" + r] = 0.0          # sum of X_r
+        s["R" + r] = 0.0          # crossed, waiting for exit space
     return s
 
 
@@ -235,24 +280,49 @@ def adv_traffic(s, a, p):
     ramp = _clip(_f(a, "ramp_metering"), 0, 1)
     dem = ramp * _pos(1 - p["ct"] * toll / 5)
     share = {"a": sig, "b": 1 - sig}
-    out = {}
+    lf, adm = {}, {}
+    t = s["t"]
+    s["t"] = t + 1
+    T = max(int(round(p["T"])), 0)
     for r in ("a", "b"):
         x = p["lam_" + r] * dem
-        pipe = s["P" + r]
-        pipe.append(x)
+        ring = s["P" + r]
+        d = int(round(p["D_" + r] - T + p["dl_" + r] * _pos(lane - p["lz"])))
+        d = 1 if d < 1 else _TRAFFIC_RING - 1 if d > _TRAFFIC_RING - 1 else d
+        ring[(t + d) % _TRAFFIC_RING] += x
         s["F" + r] += x
-        y = pipe.pop(0)
+        y = ring[t % _TRAFFIC_RING]
+        ring[t % _TRAFFIC_RING] = 0.0
         s["F" + r] -= y
-        q = min(s["Q" + r] + y, p["qmax_" + r])
-        cap = p["C_" + r] * share[r] * _pos(1 - p["l_" + r] * lane)
-        served = min(q, cap)
-        s["Q" + r] = q - served
+        s["Q" + r] = min(s["Q" + r] + y, p["qmax_" + r])
+        lf[r] = _pos(1 - p["l_" + r] * lane)
+        adm[r] = min(s["Q" + r], p["C_" + r] * share[r] * lf[r])
+    room = _pos(p["Jtot"] - s["Sa"] - s["Sb"] - s["Ra"] - s["Rb"])
+    tot = adm["a"] + adm["b"]
+    if tot > room:
+        k = room / tot
+        adm["a"] *= k
+        adm["b"] *= k
+    out = {}
+    for r in ("a", "b"):
+        s["Q" + r] -= adm[r]
+        cross = s["X" + r]
+        if cross:
+            cross.append(adm[r])
+            s["S" + r] += adm[r]
+            z = cross.pop(0)
+            s["S" + r] -= z
+        else:
+            z = adm[r]
+        s["R" + r] += z
+        served = min(s["R" + r], p["X_" + r] * lf[r])
+        s["R" + r] -= served
         f = _pos(s["F" + r])
         hist = s["H" + r]
         if hist:
             hist.append(f)
-            f = hist.pop(0)
-        n = s["Q" + r] + f
+            f = max(p["w"] * _pos(s["F" + r]), hist.pop(0))
+        n = s["Q" + r] + _pos(s["S" + r]) + s["R" + r] + f
         if r == "a":
             m = s["Qa"]
             s["M"] += p["g"] * m / (m + p["qref_a"]) * (p["Mmax"] - s["M"])
@@ -260,8 +330,9 @@ def adv_traffic(s, a, p):
         else:
             vf = p["vfree_b"]
         s["V" + r] += p["alpha"] * (vf / (1 + n / p["qref_" + r]) - s["V" + r])
+        s["O" + r] *= 1 - p["alpha0"]
         out["flow_" + r] = served
-        out["speed_" + r] = s["V" + r]
+        out["speed_" + r] = s["V" + r] + s["O" + r]
     return out
 
 
@@ -393,36 +464,44 @@ START["power_grid"], ADVANCE["power_grid"] = start_power_grid, adv_power_grid
 
 
 # ------------------------------------------------------------------ supply chain
-# Fitted to research/supply_chain.json + supply_chain_c1.json (3 runs, scratchpad E/supply_chain).
-# Chain: production (2-step delay) -> supplier stock (ceiling) -> orders withdraw available stock
-# -> dispatch queue (withdrawals stop when it is full: congestion) -> forward transport (3-step
-# conveyor) -> receiving buffer -> receiving (rate x receiving_effort) -> retail -> sales.
+# Round G (scratchpad G/supply_chain), fitted to first look + round C + round F. Same chain as E:
+# production (2-step delay) -> supplier stock (ceiling) -> orders withdraw available stock
+# -> dispatch queue (withdrawals stop when it is full) -> forward transport (3-step conveyor)
+# -> receiving buffer -> receiving (rate x receiving_effort) -> retail -> sales.
 # Idle supplier stock turns unavailable; maintenance restores it.
-# Maintenance takes part of the receiving capacity (round C: shipments +7 the step it stops).
-# Sales grow with retail stock (round C: ~27/step at stock 170, ~37/step at stock 1150).
-# Conveyors and buffers start empty, so shipments read 0 until orders flow.
+# G changes, from Round F: forward transport shares drive service with receiving and maintenance
+# (rate falls with both), and it slows as machine heat builds from transport work at high
+# receiving effort; maintenance cools it. Round F: transport ~34/step at receiving 1.5 and
+# maintenance 0, ~26 at maintenance 1; under a long stress at receiving 1.5 it falls to ~10 and
+# takes ~15 steps of maintenance to recover. At receiving 0.35 (reference pulse) no slowdown.
 DEFAULTS["supply_chain"] = dict(
-    kp=30.475112042903152,      # production per step at production_effort 1, maintenance 0 (2-step delay)
-    dm=0.6422716868477619,      # share of production lost at full maintenance
-    nm=2.824576042800507,       # maintenance exponent on that loss (loss = dm * maintenance**nm)
-    s_cap=361.8,                # supplier stock ceiling (calm reading)
-    s_res=0.0,                  # supplier stock that orders cannot withdraw
-    ag=0.40909647277548145,     # share of available supplier stock that turns unavailable per step while it sits
-    tr=0.18669021390133464,     # share of unavailable stock made available again per step per unit maintenance
-    q_max=281.9821335794766,    # dispatch queue size where new withdrawals stop (congestion)
-    trans=67.9568444498031,     # forward transport per step at zero wear (3-step conveyor)
-    b_max=1225.3989644420017,   # receiving buffer size where transport stops
-    kr=55.01904875596659,       # receiving per step per unit receiving_effort
-    dr=0.6385018911433132,      # share of receiving taken by full maintenance (shared drive service)
-    dem=26.07451530226024,      # base retail sales per step
-    e=0.008425148350236628,     # extra retail sales per step per unit of retail stock
+    kp=32.26912568747066,     # production per step at production_effort 1, maintenance 0 (2-step delay)
+    dm=0.6748131010497238,    # share of production lost at full maintenance
+    nm=1.3883883637730448,    # maintenance exponent on that loss (loss = dm * maintenance**nm)
+    s_cap=361.8,              # supplier stock ceiling (calm reading)
+    s_res=0.0,                # supplier stock that orders cannot withdraw
+    ag=0.358267119804474,     # share of available supplier stock that turns unavailable per step while it sits
+    tr=0.48422747215464135,   # share of unavailable stock made available again per step per unit maintenance
+    q_max=803.3180068301588,  # dispatch queue size where new withdrawals stop (congestion)
+    trans=55.75717518194261,  # forward transport per step at zero receiving effort, maintenance and heat (3-step conveyor)
+    b_max=192.43913634684716, # receiving buffer size where transport stops
+    kr=51.51447025719483,     # receiving per step per unit receiving_effort
+    dr=0.3558915209717783,    # share of receiving taken by full maintenance (shared drive service)
+    dem=16.468988960734052,   # base retail sales per step
+    e=0.01819208034794567,    # extra retail sales per step per unit of retail stock
+    tre=0.30292847130594425,  # share of transport lost per unit receiving_effort (shared drive service)
+    tm=0.0896066244575284,    # share of transport lost per unit maintenance
+    h0=3876.91706028572,      # machine heat where transport halves; 0 = off
+    hc=0.0013096697217733662, # share of heat lost per step at maintenance 0
+    hm=0.21545111404719985,   # extra share of heat lost per step per unit maintenance
+    hk=3.351275846420814,     # heat input = transport x receiving_effort**hk (drive service load)
 )
 
 
 def start_supply(init, p):
     s = _pos(_f(init, "inventory_supplier"))
     return dict(s=s, a=s, r=_pos(_f(init, "inventory_retail")), pp=[0.0, 0.0], q=0.0,
-                conv=[0.0, 0.0, 0.0], b=0.0)
+                conv=[0.0, 0.0, 0.0], b=0.0, h=0.0)
 
 
 def adv_supply(s, a, p):
@@ -430,8 +509,6 @@ def adv_supply(s, a, p):
     pe = _clip(_f(a, "production_effort", 1.0), 0.0, 1.5)
     re = _clip(_f(a, "receiving_effort", 1.0), 0.0, 1.5)
     mt = _clip(_f(a, "maintenance"), 0.0, 1.0)
-    # supplier stock = available part a + unavailable part un. Available stock that sits turns
-    # unavailable at rate ag; maintenance makes it available again. Everything is available at reset.
     av = s["a"]
     av += -p["ag"] * av + p["tr"] * mt * _pos(s["s"] - av)
     un = _pos(s["s"] - av)
@@ -445,7 +522,12 @@ def adv_supply(s, a, p):
     s["a"] = av
     s["s"] = av + un
     s["q"] += w
-    t = min(s["q"], p["trans"], _pos(p["b_max"] - s["b"]))
+    tcap = p["trans"] * _pos(1.0 - p["tre"] * re - p["tm"] * mt)
+    if p["h0"] > 0.0:
+        tcap /= 1.0 + (s["h"] / p["h0"]) ** 4
+    t = min(s["q"], tcap, _pos(p["b_max"] - s["b"]))
+    # machine heat: builds with transport work x drive load, cools slowly, maintenance cools it faster
+    s["h"] = _pos(s["h"] + t * re ** p["hk"] - (p["hc"] + p["hm"] * mt) * s["h"])
     s["q"] -= t
     s["conv"].append(t)
     s["b"] += s["conv"].pop(0)
@@ -459,42 +541,46 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 
 
 # ------------------------------------------------------------------ wildlife
-# Prey + hidden food stock per region, predators, and a corridor transit pool. Fitted to all research
-# runs (first look + round C single-control run, scratchpad E/wildlife).
-# Food refills while prey is low, which gives the prey overshoot after every recovery.
-# Hunting: protected habitat shelters prey (exposure 1 - sh*hab, more in the north).
-# Low habitat protection raises prey deaths in both regions within a few steps.
+# Prey + hidden food stock per region, predators, and a corridor transit pool. Round G (scratchpad
+# G/wildlife): fitted to first look + round C + round F.
+# Food sets the crowding capacity, not the birth rate of a thin herd: births b / (1 + prey / (Pb*food)).
+# After any crash prey regrows at ~0.2/step whatever the history (round F spacing), while food that built
+# up during a long low spell gives the big overshoot (reset, 100-step pulse) and a short spell a small one.
+# Hunting takes a requested number of animals: harvest saturates at about hq*Hs per unit quota per step
+# at high prey, with a refuge at low prey (Ph). Per-capita loss grows as prey falls, then stops near ~7.
+# Habitat protection acts through prey deaths (hm) and food renewal (hk), more in the north.
 # Corridor: animals leave both regions while it is open and wait in a transit pool that settles in the
 # other region at 1/tp, 1/td per step, so closing it still brings animals home (both regions dip, then rebound).
-# Predator crowding saturates at high density (reset predators 8-15 fall ~5% per step).
+# Predators are E's equation unchanged: growth saturating in prey, crowding saturating at high density.
 DEFAULTS["wildlife"] = dict(
-    b=0.26781299869299846,  # prey births per unit food
-    mu=0.09378084869219784,  # prey death rate
-    hm_n=0.2576395951605718,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
-    hm_s=0.18540464161864234,  # same, south
-    rho_n=0.022985768034225865,  # food renewal, north
-    rho_s=0.02109503717824554,  # food renewal, south
-    hk_n=0.3374597311757939,  # habitat boost to food renewal, north
-    hk_s=0.09220229754644624,  # habitat boost to food renewal, south
-    cons=0.0003492328513884398,  # food eaten per prey
-    F0=0.7332502500176639,  # food level at reset (fraction of capacity)
-    Pb=626.7976256737691,  # prey crowding of births
-    hq=0.017334337798512452,  # harvest per unit quota
-    Ph=4.123764333241913,  # harvest refuge: prey level where harvest halves per capita
-    sh_n=0.38748040073742684,  # shelter: hunting exposure 1 - sh*hab, north
-    sh_s=0.30993373356878345,  # shelter, south
+    b=0.29206325026344454,  # prey births per capita at low density
+    mu=0.0868412627390307,  # prey death rate
+    hm_n=0.5333278890247369,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
+    hm_s=0.3778253545890282,  # same, south
+    rho_n=0.002904063889637534,  # food renewal, north
+    rho_s=0.002414743835653508,  # food renewal, south
+    hk_n=0.8204361814869938,  # habitat boost to food renewal, north
+    hk_s=0.309403155036187,  # habitat boost to food renewal, south
+    cons=0.00033320281263379646,  # food eaten per prey
+    F0=0.2797781479487969,  # food level at reset (fraction of capacity)
+    Pb=435.9228781518344,  # prey crowding of births, per unit food
+    hq=0.09510735544832169,  # harvest per unit quota
+    Ph=11.391713309886619,  # harvest refuge: prey level where harvest halves per capita
+    Hs=11.399930511192862,  # harvest saturation: total harvest levels off near hq*quota*expo*Hs animals per step
+    sh_n=0.0011109008367432558,  # shelter: hunting exposure 1 - sh*hab, north
+    sh_s=0.0010604466289685602,  # shelter, south
     a=0.060447236101810194,  # predator growth at abundant prey
     Hp=1.2493526797510561,  # prey level for half predator growth
     m=0.029621192537206093,  # predator death rate
     k=0.016763889930661843,  # predator crowding
     Dk=8.558428510509604,  # predator level where crowding per predator halves
     Hv=2.09556997964094e-08,  # prey level where half the predators are counted
-    ep_n=0.011431681705489506,  # prey leaving the north per step at full corridor access
-    ep_s=0.01842451280556638,  # prey leaving the south per step at full corridor access
-    ed_n=0.017825653865054313,  # predators leaving the north per step at full corridor access
-    ed_s=0.017748456905400296,  # predators leaving the south per step at full corridor access
-    tp=49.97683271277038,  # prey transit pool: 1/tp of it settles in the other region per step
-    td=28.48842990500357,  # predator transit pool: 1/td settles per step
+    ep_n=0.023829865924902643,  # prey leaving the north per step at full corridor access
+    ep_s=0.03334043438040934,  # prey leaving the south per step at full corridor access
+    ed_n=0.01937178745847472,  # predators leaving the north per step at full corridor access
+    ed_s=0.02004989769620451,  # predators leaving the south per step at full corridor access
+    tp=45.91251138666642,  # prey transit pool: 1/tp of it settles in the other region per step
+    td=28.36763611439012,  # predator transit pool: 1/td settles per step
 )
 
 
@@ -519,8 +605,8 @@ def adv_wildlife(s, a, p):
         eat = p["cons"] * prey * food
         s["f" + reg] = min(max(food + rho * (1.0 - food) - eat, 0.0), 1.0)
         expo = _clip(1.0 - p["sh_" + reg] * hab, 0.0, 1.0)
-        harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"])
-        birth = p["b"] * food / (1.0 + prey / p["Pb"])
+        harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"]) / (1.0 + prey / p["Hs"])
+        birth = p["b"] / (1.0 + prey / (p["Pb"] * max(food, 1e-9)))
         death = p["mu"] * (1.0 + p["hm_" + reg] * (1.0 - hab))
         v = prey + prey * (birth - death) - harvest
         s["p" + reg] = v if v > 1e-6 else 1e-6
@@ -788,73 +874,88 @@ START["social_contagion"], ADVANCE["social_contagion"] = start_social, adv_socia
 
 
 # ------------------------------------------------------------------ hospital queue
-# Fitted fluid queue (round E, all research runs). Patients arrive (base `lam` plus
+# Fitted fluid queue (round G: E's structure refit on all runs incl. Round F, with the
+# orientation fade and the discharge report below). Patients arrive (base `lam` plus
 # electives into a list capped at `Emax`), wait, get admitted while occupancy < `Cs`,
 # and are discharged from step `dead` on, at most `mu` work units per step; an elective
 # needs `we` units. Arrivals past `Qmax` are referred elsewhere; waiting patients leave
 # at rate `r`.
 # mu = k * s_eff * diag_balance**hx * (1 + bo*ot) * (1 - fF*F) * (1 - phi*P)
 #   s_eff: added staff, and staff moved between assessment and treatment by a diag
-#          change (|d change| * staffing), are only `eta` effective for `To` steps.
-#          Staff cuts are instant and remove the newest added staff first.
+#          change (|d change| * staffing), are only `eta` effective while orienting.
+#          tO > 0 (round G): that orientation load fades exponentially over tO steps, and
+#          staff cuts remove orienting staff first. tO = 0: E's hard window of To steps.
 #   F: fatigue. Lags overtime * min(1, waiting / Wf) over tF steps, so overtime only
 #      tires staff while patients are waiting.
 #   P: follow-up program load, lags followup_capacity over tP steps (starts empty).
 # wait = EMA(alpha) of cw * waiting / (smoothed discharges + reneging). urgent_priority ignored.
+# Reported discharges below ~dm are shrunk by up to dq (the real ones come in lumps there).
 DEFAULTS["hospital_queue"] = dict(
-    lam=11.515616926112909,     # base arrivals per step
-    Emax=68.41379828715105,     # elective waiting-list cap
-    Qmax=331.68039170150433,    # total queue cap (overflow referred elsewhere)
-    r=0.016408766002698423,     # reneging fraction of waiting patients per step
-    Cs=76.30531098409011,       # service occupancy cap (chairs + beds)
-    k=1.0171433535619543,       # work per staff per step (regular-patient units) at balanced diag
-    phi=0.4308252550576974,     # staff share diverted by a full follow-up program
-    tP=64.21499393686628,       # follow-up program fill/empty time (steps)
-    To=105.95822557579072,      # orientation time for added or moved staff (steps)
-    eta=0.9247507525185236,     # effectiveness of staff during orientation
-    bo=0.31680848046122956,     # overtime work boost at full overtime
-    fF=0.654498202867752,       # capacity lost at full fatigue
-    tF=44.716260056911,         # fatigue build/recovery time (steps)
-    Wf=10.004613708556624,      # waiting patients at which overtime fully fatigues
-    we=1.8049617307561252,      # work per elective patient (regular patient = 1)
-    hx=0.6952436800831798,      # diag balance exponent (1 = linear tent peaked at 0.4)
-    cw=2.416268718423094,       # wait scale
-    tb=18.04323790268739,       # smoothing of recent discharges (steps)
-    alpha=0.0836048260060405,   # wait EMA weight
-    dead=2.0,                   # steps before the first discharge after reset
+    lam=11.472858996847101,      # base arrivals per step
+    Emax=81.90136769069949,      # elective waiting-list cap
+    Qmax=325.42521185402114,     # total queue cap (overflow referred elsewhere)
+    r=0.015218500230854394,      # reneging fraction of waiting patients per step
+    Cs=84.9858241167475,         # service occupancy cap (chairs + beds)
+    k=1.0126857299194054,        # work per staff per step (regular-patient units) at balanced diag
+    phi=0.39962601219754734,     # staff share diverted by a full follow-up program
+    tP=63.818123063118705,       # follow-up program fill/empty time (steps)
+    To=105.95822557579072,       # orientation window (steps), used only when tO = 0
+    eta=0.5519135709862397,      # effectiveness of staff during orientation
+    bo=0.2590795863495295,       # overtime work boost at full overtime
+    fF=0.4636855500346065,       # capacity lost at full fatigue
+    tF=102.01857511554621,       # fatigue build/recovery time (steps)
+    Wf=0.8881312798161165,       # waiting patients at which overtime fully fatigues
+    we=2.191586612530306,        # work per elective patient (regular patient = 1)
+    hx=0.6789212285835117,       # diag balance exponent (1 = linear tent peaked at 0.4)
+    cw=2.346179356494485,        # wait scale
+    tb=5.778645852985642,        # smoothing of recent discharges (steps)
+    alpha=0.045350594063182634,  # wait EMA weight
+    dead=2.0,                    # steps before the first discharge after reset
+    tO=22.22268517835332,        # >0: orientation fades exponentially over tO steps (To unused)
+    dq=0.9,                      # reported-discharge shrink at low rates (0 = off)
+    dm=4.0,                      # discharge rate below which the shrink applies
 )
 
 
 def start_hospital(init, p):
     return dict(W=max(0.0, _f(init, "queue")), E=0.0, Sr=0.0, Se=0.0, Nr=0.0, Ne=0.0,
                 w=_f(init, "wait_time"), Dbar=_f(init, "discharges"), P=0.0, F=0.0,
-                pend=[], mv=[], s_prev=20.0, d_prev=0.4, wprev=0.0, t=0)
+                pend=[], mv=[], Na=0.0, Nm=0.0, s_prev=20.0, d_prev=0.4, wprev=0.0, t=0)
 
 
 def adv_hospital(s, a, p):
     st = _f(a, "staffing", 20.0); ot = _f(a, "overtime"); dg = _f(a, "diagnostic_allocation", 0.4)
     To = p["To"]
-    # orientation cohorts [age, amount]: added staff (cuts remove the newest first) and moved staff
+    tO = p.get("tO", 0.0)
     pend, mv = s["pend"], s["mv"]
     ds = st - s["s_prev"]
-    if ds > 0:
-        pend.append([0, ds])
-    elif ds < 0:
-        cut = -ds
-        while cut > 1e-12 and pend:
-            if pend[-1][1] <= cut:
-                cut -= pend.pop()[1]
-            else:
-                pend[-1][1] -= cut
-                cut = 0.0
-    Np = 0.0
-    for c in pend:
-        Np += c[1] * min(1.0, max(0.0, To - c[0]))
     dd = abs(dg - s["d_prev"]) * st
-    if dd > 0:
-        mv.append([0, dd])
-    for c in mv:
-        Np += c[1] * min(1.0, max(0.0, To - c[0]))
+    if tO > 0.0:
+        # orientation load that fades exponentially over tO steps: added staff (cuts remove
+        # orienting staff first) plus staff moved by a diag change
+        s["Na"] = max(0.0, s["Na"] + ds)
+        s["Nm"] += dd
+        Np = s["Na"] + s["Nm"]
+        dec = math.exp(-1.0 / tO)
+        s["Na"] *= dec
+        s["Nm"] *= dec
+    else:
+        # orientation cohorts [age, amount]: added staff (cuts remove the newest first) and moved staff
+        if ds > 0:
+            pend.append([0, ds])
+        elif ds < 0:
+            cut = -ds
+            while cut > 1e-12 and pend:
+                if pend[-1][1] <= cut:
+                    cut -= pend.pop()[1]
+                else:
+                    pend[-1][1] -= cut
+                    cut = 0.0
+        Np = 0.0
+        if dd > 0:
+            mv.append([0, dd])
+        for c in pend + mv:
+            Np += c[1] * min(1.0, max(0.0, To - c[0]))
     Np = min(Np, st)
     s_eff = st - (1.0 - p["eta"]) * Np
     s["s_prev"] = st
@@ -913,6 +1014,11 @@ def adv_hospital(s, a, p):
         mv.pop(0)
     s["W"], s["E"], s["Sr"], s["Se"], s["Nr"], s["Ne"] = W, E, Sr, Se, Nr, Ne
     s["t"] += 1
+    dq = p.get("dq", 0.0)
+    if dq > 0.0:
+        # real discharges come in lumps when service is slow (mostly 0, now and then a batch);
+        # the score rewards the typical value there, so report low rates shrunk toward 0
+        D *= 1.0 - dq * math.exp(-(D / max(p.get("dm", 3.0), 1e-6)) ** 2)
     return {"wait_time": s["w"], "queue": W + E + Sr + Se + Nr + Ne, "discharges": D}
 
 
