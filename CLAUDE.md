@@ -187,7 +187,7 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
    foreach ($k in "xy","yx","spacing") { python collect_runs.py SYSTEM "file:schedules/f1.json#SYSTEM.$k" --out research\SYSTEM_f1.json }
    ```
 
-7. Round H (proposed Sep 26, NOT run, needs Chris's OK): one long hold from reset per weak system,
+7. Done Sep 26 (approved and run by Chris, see Findings): Round H, one long hold from reset per weak system,
    `schedules/h1.json`, 2,050 steps: social_contagion recovery 500 (leaves 40), epidemic recovery
    400 (leaves 0), market 70% joint pulse 400 (leaves 0), wildlife 70% pulse 350 (leaves 13),
    hospital_queue 70% pulse 400 (leaves 0). Public uploads replace the "final check" reserve.
@@ -367,6 +367,24 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   A/B t100 64/50, t300 94/96, t500 102/127; epidemic recovery cases/hospital t100 46/40, t200
   113/88, t400 100/72; market 70% joint price t100 78.8, t400 75.7, depth ~56; wildlife 70% prey
   N/S t100 34/28, t350 35/29; hospital 70% queue ~318, discharges t100 2.85, t400 1.96, wait 78.
+- Round H collected Sep 26 (~11:02-11:09 Toronto): all 5 long holds complete and match
+  `schedules/h1.json`. Steps left: social_contagion 40, wildlife 13, epidemic / market /
+  hospital_queue 0. Data vs current models (score on our ruler):
+  epidemic recovery 400: waves fade to ~100 cases by step 250, the model matches (0.95), so the
+  epidemic's weak public score is not its long recovery behavior.
+  social recovery 500: both communities saturate, A ~91 and B ~74 at step 500, still creeping;
+  the model keeps climbing (A 102, B 125 at 500) (0.78).
+  market 70% joint pulse 400: price falls slowly (~0.1-0.15/step) for ~250 steps and stops near
+  77; depth erodes to 7 while price falls, then rebounds to 27 by step 400; volume ~3 while price
+  moves, 1.6 after. The model drops price fast then freezes, depth stuck at 56 (0.64).
+  wildlife 70% pulse 350: prey settles at ~20 / ~18, predators ~1.76; E rebounds to 35 / 29 and
+  predators 2.14 (0.80). The Round G wildlife candidate scores 0.71 on this run, which fits its
+  small public drop.
+  hospital 70% pulse 400: discharges ~0 for ~25 steps then flat at ~4.4; the model decays to 2.0
+  (0.86). Wait levels at 74.5, queue at ~323.
+- Round I (Sep 26, workflow of 4 agents: market, social, wildlife, hospital): refit to the long
+  runs. Ship rule: long run +0.02, held-out Round F no worse than -0.005, first look / C / F
+  in-sample no worse than -0.01, gate passes. Harness baseline = the current repo models.
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
   intervention order, recovery spacing, joint intervention.
 
