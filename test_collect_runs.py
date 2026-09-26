@@ -50,4 +50,29 @@ for _ in range(2):
 log = json.load(open(out))
 assert [len(r["actions"]) for r in log["runs"]] == [5, 5]
 assert not os.path.exists(out + ".tmp")
+
+# Windows lock (WinError 5): a few failed swaps are retried and nothing is lost
+real_replace, fails = os.replace, [3]
+def flaky_replace(src, dst):
+    if fails[0] > 0:
+        fails[0] -= 1
+        raise PermissionError(5, "Access is denied")
+    real_replace(src, dst)
+os.replace = flaky_replace
+collect_runs.main()
+assert [len(r["actions"]) for r in json.load(open(out))["runs"]] == [5, 5, 5]
+
+# a lock that never clears: the run goes to a rescue file instead of being lost
+def locked(src, dst):
+    raise PermissionError(5, "Access is denied")
+os.replace, collect_runs.time.sleep = locked, lambda s: None
+try:
+    collect_runs.main()
+    raise AssertionError("a permanent lock should stop with SystemExit")
+except SystemExit:
+    pass
+os.replace = real_replace
+rescue = [f for f in os.listdir(tmp) if "_rescue_" in f]
+assert len(rescue) == 1, rescue
+assert [len(r["actions"]) for r in json.load(open(os.path.join(tmp, rescue[0])))["runs"]] == [5, 5, 5, 5]
 print("\ncollect_runs checks passed")

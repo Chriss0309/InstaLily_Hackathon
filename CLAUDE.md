@@ -280,6 +280,11 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   our runs never showed. That is what Round F is for.
 - This cloud session cannot collect: the network policy blocks gt-gateway-wavddee32q-uc.a.run.app
   and no gateway credentials are set. Collection runs on Chris's machine.
+- Round F on Sep 26 (Chris's machine): hospital_queue through supply_chain finished, then
+  wildlife.xy crashed partway with WinError 5 on `os.replace` (the log file held open for a moment
+  by an editor, indexer or antivirus). The partial run is real paid data: it may sit in
+  `research/wildlife_f1.json` and/or a leftover `.tmp`. `collect_runs.py` now retries locked saves
+  and writes a `_rescue_` file instead of crashing.
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
   intervention order, recovery spacing, joint intervention.
 

@@ -36,6 +36,21 @@ sys.path.insert(0, HERE)
 import predict as P
 
 
+def save(path, data, tries=25):
+    """Write the whole log to path.tmp, then swap it in. On Windows an editor, indexer or
+    antivirus can hold either file for a moment (WinError 5), so retry instead of crashing.
+    Returns False if every try hit a lock; the next step's save rewrites the whole log anyway."""
+    for _ in range(tries):
+        try:
+            with open(path + ".tmp", "w") as f:
+                json.dump(data, f)
+            os.replace(path + ".tmp", path)   # atomic swap: an interrupt never truncates the log
+            return True
+        except PermissionError:
+            time.sleep(0.2)
+    return False
+
+
 def build_plan(family, plan, steps, pre, dur, post):
     ref = P.REFERENCE[family]
     rec, pul = ref["recovery"], ref["pulse"]
@@ -112,14 +127,21 @@ def main():
         run = sim.reset(args.family)
         run_id, initial = run["run_id"], run["observation"]
         observations = []
+        saved = True
         for a in actions:
             observations.append(sim.step(run_id, a)["observation"])
             partial = {"plan": args.plan, "time": time.strftime("%Y-%m-%d %H:%M:%S"),
                        "initial": initial, "actions": actions[:len(observations)],
                        "observations": observations}
-            with open(out_path + ".tmp", "w") as f:
-                json.dump({**log, "runs": log["runs"] + [partial]}, f)
-            os.replace(out_path + ".tmp", out_path)   # atomic swap: an interrupt never truncates the log
+            data = {**log, "runs": log["runs"] + [partial]}
+            saved = save(out_path, data)
+            if not saved:
+                print(f"  warning: {out_path} is locked; step {len(observations)} will be saved with the next one")
+        if not saved and not save(out_path, data, tries=300):
+            rescue = os.path.splitext(out_path)[0] + time.strftime("_rescue_%H%M%S.json")
+            with open(rescue, "w") as f:
+                json.dump(data, f)
+            sys.exit(f"{out_path} stayed locked; this run is saved in {rescue}. Do not rerun it.")
         print("budget after: ", sim.budget(args.family)["remaining"])
 
     print(f"saved run #{len(log['runs']) + 1} ({len(observations)} steps) to {out_path}")
