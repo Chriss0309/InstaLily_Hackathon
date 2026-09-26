@@ -796,45 +796,52 @@ START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 
 
 # ------------------------------------------------------------------ social contagion
-# Fitted structural model (round E, R2_forms_sharedroom). Per community: core members K (the initial
-# (1-f) share, never leave), loyal recruits L (organic + bridge introductions), locally
-# seeded recruits S, incentive-led members J (the initial f share, plus converts).
-# Seeding fills a 2-stage onboarding queue (`tq` steps per stage): A gets sa*seed*(1-br),
-# B gets sb*seed, of which the bridge share br goes through a slower introduction queue
-# (`tq2` per stage) into L. Seeded onboarding is throttled by one shared capacity `Nt`
-# (A + B members). Incentive adds no recruits; while it is on, L and S convert to J at
-# kc*u (u = incentive/2) and J stays; when it is off J leaves at lam*(1-u) (the ~25% start-up
-# dip and the crash back to the core after any incentive period), S churns at lr*(1-u), and
-# L and S churn at lamM*(E - incentive) while it sits below its expectation E (EMA, `tau_e`).
-# Organic growth (a + b*A)*room goes to L; room is the shared capacity room.
-# Untested: incentive held between 0 and 2 (research used only 0 and 2); there conversion (kc*u) and
-# drain (lam*(1-u)) both run, so members slowly leak away.
+# Fitted structural model (round G, B organic growth per member bounded <= 0). Per community: core members K (the initial (1-f) share,
+# never leave), loyal recruits L (organic + bridge introductions), seeded recruits S,
+# incentive-led members J (the initial f share, promised cohorts, converts), disappointed former
+# members D, and people who could still join P = N - members - D - queued (finite community N).
+# Seeding x (1 + m*u) x P/N fills a 2-stage onboarding queue (`tq` steps per stage), u =
+# incentive/2: A gets sa*seed*(1-br), B gets sb*seed, of which the bridge share br goes through
+# a slower introduction queue (`tq2` per stage) into L. Seeded onboarding is also throttled by
+# one shared workforce capacity `Nt` (A + B members). Promises accompany waiting cohorts: a share
+# phi*u of each queue entry graduates into J instead of S (or L). While incentive is on, L and S
+# convert to J at kc*u; J leaves at lam*(1-u), S churns at lr*(1-u), and L and S churn at
+# lamM*(E - 2u) while incentive sits below its expectation E (EMA, `tau_e`). Everyone who leaves
+# becomes disappointed and returns to P after `tau_d` steps on average. Organic growth
+# (a + b*A) x workforce room x P/N goes to L.
 DEFAULTS["social_contagion"] = dict(
-    f=0.3937928344280045,         # share of initial members who are incentive-led (leave at reset)
-    lam=0.0821023072374982,       # incentive-led drain per step at zero incentive
-    tq=4.997774906771391,         # steps per local onboarding stage (2 stages)
-    tq2=40.142792333100665,       # steps per bridge-introduction stage (2 stages)
-    sa=1.025974357057521,         # A queue entries per unit seeding (times 1 - bridge)
-    sb=0.34928196883019497,       # B queue entries per unit seeding (bridge share goes via introductions)
-    Nt=440.7082879958301,         # shared onboarding capacity (A + B members)
-    aa=0.7053333177480016,        # organic growth A per step (times room)
-    ab=0.12972760227206098,       # organic growth B per step (times room)
-    ba=-0.005548776280779653,     # organic growth per member A
-    bb=0.003910881753617038,      # organic growth per member B
-    kc=0.04327380200237239,       # recruits converted to incentive-led per step at full incentive
-    lr=0.010966633225799948,      # seeded-recruit churn per step at zero incentive
-    lamM=0.4775763072954847,      # recruit churn per step per unit of unmet incentive expectation
-    tau_e=13.278237661719984,     # incentive expectation time constant (steps)
+    f=0.5955365677634277,         # share of initial members who are incentive-led (leave at reset)
+    lam=0.05987886032943476,       # incentive-led drain per step at zero incentive
+    tq=5.218456628106232,         # steps per local onboarding stage (2 stages)
+    tq2=31.534565005523298,       # steps per bridge-introduction stage (2 stages)
+    sa=1.56791798570309,         # A queue entries per unit seeding (times 1 - bridge)
+    sb=0.45141383640761323,       # B queue entries per unit seeding (bridge share goes via introductions)
+    Nt=529.4387189558829,         # shared onboarding capacity (A + B members)
+    aa=1.1211220403114361,        # organic growth A per step (times room)
+    ab=0.4710383447266911,       # organic growth B per step (times room)
+    ba=-0.010387650306628608,     # organic growth per member A
+    bb=-6.749067707581832e-05,      # organic growth per member B
+    kc=0.0764713011867376,       # recruits converted to incentive-led per step at full incentive
+    lr=0.008481136103862485,      # seeded-recruit churn per step at zero incentive
+    lamM=0.1336494063304035,      # recruit churn per step per unit of unmet incentive expectation
+    tau_e=13.666104189635739,     # incentive expectation time constant (steps)
+    phi=0.005769467211243506,                      # share of queue entries promised at full incentive
+    m=0.11583489044923706,                        # extra seeded recruitment at full incentive (x (1 + m*u))
+    Na=353.7802632648873,                       # community size A
+    Nb=249.95709806194188,                       # community size B
+    tau_d=1.0000100589362795,                   # steps before a disappointed former member reconsiders
+    kr=11.72825499785435,                       # churn reduction from cross-community relationships (1/(1 + kr*R))
+    tau_r=583.699194352191,                   # relationship memory R: EMA of bridge outreach over tau_r steps
 )
 
 
 def start_social(init, p):
     Aa = _pos(_f(init, "adopters_a")); Ab = _pos(_f(init, "adopters_b"))
     f = p["f"]
-    s = dict(E=0.0)
+    s = dict(E=0.0, R=0.0)
     for c, A0 in (("a", Aa), ("b", Ab)):
         s["K" + c] = (1 - f) * A0; s["J" + c] = f * A0
-        for k in ("L", "S", "Q1", "Q2", "P1", "P2"):
+        for k in ("L", "S", "D", "Q1", "Q2", "P1", "P2", "Q1p", "Q2p", "P1p", "P2p"):
             s[k + c] = 0.0
     return s
 
@@ -843,29 +850,38 @@ def adv_social(s, a, p):
     seed = _clip(_f(a, "seeding"), 0, 10); u = _clip(_f(a, "incentive"), 0, 2) / 2
     br = _clip(_f(a, "bridge_outreach"), 0, 1)
     drain = p["lam"] * (1 - u)
+    pr = p["phi"] * u
     s["E"] += (2 * u - s["E"]) / p["tau_e"]
+    s["R"] += (br - s["R"]) / p["tau_r"]
+    keep = 1 / (1 + p["kr"] * s["R"])
     churnE = p["lamM"] * max(0.0, s["E"] - 2 * u)
     A = {c: s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c] for c in ("a", "b")}
     roomS = max(0.0, 1 - (A["a"] + A["b"]) / p["Nt"])
+    g = seed * roomS * (1 + p["m"] * u)
     out = {}
     for c, loc, obs in (("a", p["sa"] * (1 - br), "adopters_a"), ("b", p["sb"] * (1 - br), "adopters_b")):
-        g = seed * roomS
-        ql = loc * g
-        qx = p["sb"] * br * g if c == "b" else 0.0
-        o1 = s["Q1" + c] / p["tq"]; o2 = s["Q2" + c] / p["tq"]
-        s["Q1" + c] = s["Q1" + c] + ql - o1
-        r1 = s["P1" + c] / p["tq2"]; r2 = s["P2" + c] / p["tq2"]
-        s["P1" + c] = s["P1" + c] + qx - r1; s["P2" + c] = s["P2" + c] + r1 - r2
-        s["Q2" + c] = s["Q2" + c] + o1 - o2
-        L = s["L" + c]; S = s["S" + c]; J = s["J" + c]
-        org = (p["a" + c] + p["b" + c] * A[c]) * roomS
+        queued = s["Q1" + c] + s["Q2" + c] + s["P1" + c] + s["P2" + c]
+        free = max(0.0, 1 - (A[c] + s["D" + c] + queued) / p["N" + c])
+        ql = loc * g * free
+        qx = p["sb"] * br * g * free if c == "b" else 0.0
+        tq, tq2 = p["tq"], p["tq2"]
+        o1 = s["Q1" + c] / tq; o2 = s["Q2" + c] / tq
+        o1p = s["Q1p" + c] / tq; o2p = s["Q2p" + c] / tq
+        r1 = s["P1" + c] / tq2; r2 = s["P2" + c] / tq2
+        r1p = s["P1p" + c] / tq2; r2p = s["P2p" + c] / tq2
+        s["Q1" + c] += ql - o1; s["Q2" + c] += o1 - o2
+        s["Q1p" + c] += pr * ql - o1p; s["Q2p" + c] += o1p - o2p
+        s["P1" + c] += qx - r1; s["P2" + c] += r1 - r2
+        s["P1p" + c] += pr * qx - r1p; s["P2p" + c] += r1p - r2p
+        L = s["L" + c]; S = s["S" + c]; J = s["J" + c]; D = s["D" + c]
+        org = (p["a" + c] + p["b" + c] * A[c]) * roomS * free
         convL = p["kc"] * u * L; convS = p["kc"] * u * S
-        leaveJ = drain * J
-        leaveS = p["lr"] * (1 - u) * S
-        dJ = convL + convS - leaveJ
-        dS = o2 - convS - leaveS - churnE * S
-        dL = r2 + org - convL - churnE * L
-        s["J" + c] = max(0.0, J + dJ); s["S" + c] = max(0.0, S + dS); s["L" + c] = max(0.0, L + dL)
+        leaveJ = min(J, drain * J); leaveS = min(S, (p["lr"] * (1 - u) * keep + churnE) * S)
+        leaveL = min(L, churnE * L)
+        s["J" + c] = max(0.0, J + o2p + r2p + convL + convS - leaveJ)
+        s["S" + c] = max(0.0, S + (o2 - o2p) - convS - leaveS)
+        s["L" + c] = max(0.0, L + (r2 - r2p) + org - convL - leaveL)
+        s["D" + c] = D + leaveJ + leaveS + leaveL - D / p["tau_d"]
         out[obs] = s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c]
     return out
 

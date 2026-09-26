@@ -141,8 +141,11 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   and Round C each no more than 0.01 below E, 4,000-step crash/blow-up gate passes. Every claimed
   win was re-run independently with the agent's own fit code before merging. Merged into
   predict.py + models: hospital_queue (held-out F 0.795 -> 0.839), supply_chain (0.695 -> 0.789),
-  wildlife (0.836 -> 0.874), traffic (0.745 -> 0.764), market (0.880 -> 0.899). The other five are
-  byte-identical to E. social_contagion did not ship (see Findings).
+  wildlife (0.836 -> 0.874), traffic (0.745 -> 0.764), market (0.880 -> 0.899), and
+  social_contagion (0.812 -> 0.862; the agent's best candidate refit with B's per-member organic
+  growth bounded <= 0, which also cleared the Round C floor). The other four (epidemic,
+  power_grid, reservoir, ad_auction) are byte-identical to E. Upload zip with only the six
+  changed systems: `uploads/2026-09-26_G_six.zip` (not uploaded yet; public scores pending).
 
 ## Next steps
 
@@ -335,10 +338,10 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   rate+tax pulses hold price flat ~12 steps then fall to a 65.9 floor; rate alone plateaus at
   72.2; while tax is on, committed price moves don't reverse (xy keeps falling after the rate
   ends); volume/depth only move while price moves.
-- social_contagion (not shipped in Round G): the best candidate fixes E's too-fast post-pulse
-  crash (held-out F 0.812 -> 0.860) but missed the Round C floor by 0.0016. Bigger problem, in E
-  and every candidate: at the recovery action B keeps growing for thousands of steps (E: B 321 at
-  step 4,000; data after every pulse settles A ~45-75, B ~35-65, and growth slows as B rises).
+- social_contagion: the agent's best candidate fixed E's too-fast post-pulse crash (held-out F
+  0.812 -> 0.860) but missed the Round C floor by 0.0016; refit with bb <= 0 it passed (0.862,
+  c1 0.9271) and shipped. Still open, in E and in G: at the recovery action B keeps growing for thousands of steps (E: B 321 at
+  step 4,000, G: 240; data after every pulse settles A ~45-75, B ~35-65, and growth slows as B rises).
   Our runs are <= 420 steps, so the long-run ceiling is unidentified. This may be most of the
   0.497 public score (10 of 40 episodes are long holds).
 - The documents say each phase's 40 episodes are exactly 10 per category: sustained operation,
