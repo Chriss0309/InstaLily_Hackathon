@@ -28,6 +28,8 @@ forecasts 4,000 steps ahead with no feedback. Background, reasoning and per-syst
 - Flag anything new you discover (rule changes, API surprises, data that contradicts a model) and
   add it to the Findings section below.
 - Windows + PowerShell machine. Show commands for PowerShell with the venv active.
+- Never just say "git pull". Give the exact commands with the repo path and this session's branch,
+  e.g. `cd C:\Users\ooich\instalily_hackathon` then `git pull origin claude/fervent-knuth-xybk8z`.
 
 ## Competition contract (what the scorer does)
 
