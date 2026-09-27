@@ -350,6 +350,15 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   0.8169, reservoir 0.8613, social 0.5707, supply_chain 0.8120, traffic 0.8377, wildlife 0.7564;
   mean 0.7684. `uploads/2026-09-27_final_candidate_v7.zip` = all ten at those versions, every
   folder proven identical in forecasts to its scored upload. This is the default final.
+- Round Q (Sep 27 Toronto, scratch `Q/`, `J/fit_score.py`): params-only refits of the shipped
+  models with the score-shaped loss on both rulers (wildlife A2's recipe), every float param free
+  except each family's pinned list. All logs std/d1 before -> after (worst single log): ad_auction
+  0.926/0.909 -> 0.932/0.917 (-0.002; J run +0.026/+0.036), power_grid 0.912/0.901 -> 0.919/0.909
+  (-0.002), traffic 0.868/0.872 -> 0.871/0.882 (-0.004), wildlife (from A2, all params free this
+  time) 0.929/0.836 -> 0.933/0.846 (-0.002). Supply_chain did not move (already at the score's
+  optimum). Gates pass, hold scans within 0.4 d1-sigma. Probe zip
+  `uploads/2026-09-27_Q_four_refits.zip`; keep a system only if it beats ad 0.8811, power 0.8169,
+  traffic 0.8377, wildlife 0.7564.
 
 ## Next steps
 
