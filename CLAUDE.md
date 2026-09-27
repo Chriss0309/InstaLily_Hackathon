@@ -225,6 +225,13 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   traffic 0.831 (K), wildlife 0.749 (I); mean 0.758. `uploads/2026-09-27_final_candidate_v3.zip`
   = all ten at those versions, every folder proven identical in forecasts to the upload it was
   scored from. This is the default final.
+- Reservoir V2 (Sep 27, scratch `J/reservoir_v2`): V1P plus fitted weights for release and
+  irrigation in E's quality stress drive (fit 0.26 each; E had 1; rounds C and F: alone they
+  leave quality unchanged). Quality params refit on all four logs. All logs 0.9055/0.9273 ->
+  0.9127/0.9314; honest J +0.012/+0.006 (misses the +0.01 structural bar on d1 by 0.004); long
+  holds move at most 0.3 d1-sigma, all toward the J data (70% hold quality 0.926 -> 0.940), none
+  of round K's big no-aeration drops. Public test zip `uploads/2026-09-27_M_reservoir_v2.zip`;
+  keep only if it beats V1P's 0.8613.
 
 ## Next steps
 
