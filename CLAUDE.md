@@ -359,6 +359,24 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   optimum). Gates pass, hold scans within 0.4 d1-sigma. Probe zip
   `uploads/2026-09-27_Q_four_refits.zip`; keep a system only if it beats ad 0.8811, power 0.8169,
   traffic 0.8377, wildlife 0.7564.
+- Round R (built Sep 27, for Toronto Monday's slots; Sunday's are used up for these five, and one
+  out-of-slot system rejects the whole zip): `uploads/2026-09-28_R_five_probes.zip`. Keep a
+  system only if it beats its best public. epidemic (> 0.7492): score-shaped refit of A_full,
+  every log up, all 0.964/0.908 -> 0.971/0.929 (s0 moved but is unused by the age model; reset
+  to 1). hospital H2 (> 0.7333): headroom, the opposite of P's losing bet: follow-up diverts
+  27.5% of staff, capacity at recovery 14.0 vs arrivals 11.46, the post-pulse ~12/step cap comes
+  from returning staff at 77% effectiveness fading over ~500 steps plus fatigue; recovery hold
+  flat at 22.9, staffing 17 / diag 0.35-0.5 / electives 1/step stay calm (waitdn tips to
+  140-200); every log within 0.005 (all 0.924/0.882 -> 0.925/0.887). Its bolder sibling H1
+  (capacity 17.7) loses round C 0.007/0.014 and waits. market (> 0.6655): score-shaped refit of
+  Bt, all 0.889/0.797 -> 0.893/0.802 (falling speed cap removed, volume no longer reacts to the
+  rate). reservoir (> 0.8613): score-shaped refit of V1P, all 0.906/0.927 -> 0.913/0.932, nearly
+  all of it from the quality memory params (the family that lost twice); water-only refit is
+  flat. social C (> 0.5707): root fix of B's endless growth under a steady incentive: members who
+  converted from loyal still fill the relationship-led room, and incentive-led recruits come
+  from their own finite audience (B's size unidentified, set low at 50). Incentive-only 4,000-step
+  hold B 128-148 (A: 236); all logs 0.936/0.803 -> 0.936/0.802, misses the per-log floor on f1
+  (-0.009 d1) and base (-0.006 d1), c1 +0.010 d1.
 
 ## Next steps
 
