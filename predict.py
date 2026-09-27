@@ -714,46 +714,34 @@ START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife
 
 
 # ------------------------------------------------------------------ reservoir
-# Round J refit (Sep 26) on every paid run: first look, round C (one control at a time),
-# round F (order + spacing) and round J (250 steps at the 70% pulse, then 150 at recovery).
-# Water: seasonal river inflow (sinusoid in steps since reset), spillway cap at 941 (excess
-# leaves as spill in outflow), loss e0 + e1*level.
-# Delivery = min(request, outlet capacity, water available). Capacity grows with the square
-# root of the head, c0 + c1*sqrt(level) (orifice flow). Round J showed it: at levels 275-400
-# the old straight line was up to 0.7/step off; one curve fits 275-941 for every depth and
-# aeration setting.
-# Bank storage: the reservoir exchanges kx*(H - level) per step with an aquifer whose head H
-# starts at H0 on every reset and relaxes toward the level at rate kh. A falling level draws
-# water in (a share ro of it shows in the inflow reading), a rising level loses some.
-# Quality: two stored layers, read at the outlet by withdrawal depth w (0 = surface, 1 = deep):
-# quality = qc - (1-w)*S - w*D, plus a start-up transient from the first reading (tq).
-# S = surface deficit: slow calm drift s0; grows only when aeration is near zero,
-# sa*(1-aer)^na (round J: aeration 0.3 for 250 steps left the surface clean), faster during
-# deep withdrawal (1 + sw*w: a deep release changes the stored layers; round F order runs).
-# D = deep deficit: starts at D0 < 0 (the reset profile has better deep water: deep withdrawal
-# reads ~0.007 higher early on), grows in proportion to missing aeration (da) and relaxes
-# toward the surface at kd. Both recover at their own rate plus flushing, kf times the share
-# of stored water leaving per step (round J: at level ~300 with ~11/step out, quality levels
-# off within ~100 steps). Release and irrigation alone leave quality unchanged (round C, F).
+# Grey-box fit to research data, first look + round C (Sep 25). Seasonal river inflow (sinusoid in
+# steps since reset), water balance with a hard spillway cap (excess leaves as spill in outflow),
+# delivery min(request, c0 + c1*level, water available), loss e0 + e1*level.
+# Bank storage: the reservoir exchanges kx*(H - level) per step with an aquifer whose head H starts
+# at H0 on every reset and relaxes toward the level at rate kh. A falling level draws water in (a
+# share ro of it shows in the inflow reading), a rising level loses some. No irrigation return
+# flow (round C: none seen in 90 steps of irrigation 8).
+# Quality: calm level qc, start-up transient from the first reading, a slow stress
+# memory m driven only by a joint push: u = excess of the mean 0..1 position (recovery -> pulse)
+# over th = 0.25, the most any one control alone can give.
 DEFAULTS["reservoir"] = dict(
-    A=11.311063112274228, B=2.2254484682304327, P=67.82051362601999, phi=0.023315293531304966,   # river = A + B*sin(2*pi*t/P + phi)
-    c0=4.568004913413258, c1=0.39201795729701744,   # outlet capacity c0 + c1*sqrt(level)
-    e0=-0.023485257219978194, e1=0.0012596644753478103,   # loss per step e0 + e1*level
+    A=11.279344763228828, B=2.2546514118561714, P=67.77337141928736, phi=0.015263764397348854,   # river = A + B*sin(2*pi*t/P + phi)
+    c0=9.082030387128691, c1=0.007593384533294581,   # delivery cap c0 + c1*level
+    e0=-0.19622625214888292, e1=0.0016530556531527793,   # loss per step e0 + e1*level
     Lcap=941.0,   # spillway level (measured, held fixed in the fit)
-    kx=0.005729233064621423, kh=0.03787895141137731, H0=435.59773769709494, ro=0.6413732880317944,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
-    qc=0.9557237762358463, tq=4.1289578456719145,   # calm quality, start-up time constant
-    s0=3.455440037355148e-05, sa=0.00012015648578010433, na=8.0, sw=0.7705429686376665, ks=0.0029492133683308723,   # surface: drift, no-aeration drive, its shape (fixed), deep-withdrawal boost, recovery
-    da=0.0003393066798193797, kd=0.010343836182189627, D0=-0.010176188908178603, kf=0.06443387496311355,   # deep: no-aeration drive, relaxation toward surface, reset value; flushing
+    kx=0.01604774298401246, kh=0.1382750495811783, H0=533.7342773766807, ro=0.6840276588459931,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
+    qc=0.9596712525080192, qa=0.09123982053881292, tq=4.660674394054027,   # calm quality, memory weight, start-up time constant
+    g0=0.0013703030433965336, g=0.0035950058192401185, d=0.006089635459834917, th=0.25,   # memory: calm drive, stress drive, decay, drive shape
 )
 
 
 def start_reservoir(init, p):
-    return dict(t=0, level=_pos(_f(init, "level")), q0=_f(init, "quality"), H=p["H0"], S=0.0, D=p["D0"])
+    return dict(t=0, level=_pos(_f(init, "level")), q0=_f(init, "quality"), m=0.0, H=p["H0"])
 
 
 def adv_reservoir(s, a, p):
-    aer = _clip(_f(a, "aeration", 1.0), 0.0, 1.0); irr = _pos(_f(a, "irrigation_allocation"))
-    rel = _pos(_f(a, "release_rate", 2.0)); w = _clip(_f(a, "withdrawal_depth"), 0.0, 1.0)
+    aer = _f(a, "aeration", 1.0); irr = _pos(_f(a, "irrigation_allocation"))
+    rel = _pos(_f(a, "release_rate", 2.0)); depth = _f(a, "withdrawal_depth")
     s["t"] += 1; t = s["t"]; L = s["level"]
     river = p["A"] + p["B"] * math.sin(2 * math.pi * t / p["P"] + p["phi"])
     G = p["kx"] * (s["H"] - L)
@@ -761,8 +749,7 @@ def adv_reservoir(s, a, p):
     inflow = river + (p["ro"] * G if G > 0 else 0.0)
     wet = river + G
     loss = p["e0"] + p["e1"] * L
-    cap = p["c0"] + p["c1"] * math.sqrt(L)
-    dlv = min(rel + irr, max(cap, 0.0), max(L + wet - loss, 0.0))
+    dlv = min(rel + irr, max(p["c0"] + p["c1"] * L, 0.0), max(L + wet - loss, 0.0))
     L = L + wet - dlv - loss
     spill = 0.0
     if L > p["Lcap"]:
@@ -770,11 +757,11 @@ def adv_reservoir(s, a, p):
     if L < 0:
         L = 0.0
     s["level"] = L
-    F = (dlv + spill) / max(L, 1.0)   # share of the stored water leaving this step (flushing)
-    S = s["S"]; D = s["D"]
-    s["S"] = S + p["s0"] + p["sa"] * (1.0 - aer) ** p["na"] * (1.0 + p["sw"] * w) - (p["ks"] + p["kf"] * F) * S
-    s["D"] = D + p["da"] * (1.0 - aer) - p["kd"] * (D - S) - p["kf"] * F * D
-    q = p["qc"] - (1.0 - w) * s["S"] - w * s["D"] + (s["q0"] - p["qc"]) * math.exp(-t / p["tq"])
+    ub = _clip(((rel - 2.0) / 10.0 + irr / 8.0 + depth + (1.0 - aer)) / 4.0, 0.0, 1.0)
+    u = max(ub - p["th"], 0.0) / (1.0 - p["th"])
+    m = s["m"]
+    s["m"] = m + ((p["g0"] + p["g"] * u) * (1 - m) - p["d"] * m)
+    q = p["qc"] - p["qa"] * s["m"] + (s["q0"] - p["qc"]) * math.exp(-t / p["tq"])
     return {"level": L, "inflow": inflow, "outflow": dlv + spill, "quality": q}
 
 

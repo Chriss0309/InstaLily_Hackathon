@@ -197,6 +197,28 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   (not uploaded yet). Revert source for any of the six: `uploads/2026-09-26_final_candidate_v1.zip`
   (the block and model.json as of commit 3079e7a).
 
+- Upload K (public, Sep 27 Toronto, just after midnight, `uploads/2026-09-26_K_six.zip`) scored:
+  social_contagion 0.5512 (I 0.5144), power_grid 0.8169 (E 0.7804), traffic 0.8305 (G 0.8167),
+  supply_chain 0.8085 (G 0.8003), ad_auction 0.8811 (E 0.8780), reservoir 0.8275 (E 0.8447).
+  Five of six up; reservoir dropped, so its block and params are back to E (byte-identical
+  forecasts, checked with `compare_zips.py`). Best public per system: ad_auction 0.881 (K),
+  epidemic 0.687 (E), hospital 0.733 (I), market 0.665 (G), power_grid 0.817 (K), reservoir
+  0.845 (E), social 0.551 (K), supply_chain 0.809 (K), traffic 0.831 (K), wildlife 0.749 (I);
+  mean 0.757 (was 0.747). Honest-J gains predicted the sign for 5 of 6 but not the size
+  (supply +0.054 honest -> +0.008 public; social +0.016 CV -> +0.037 public).
+  `uploads/2026-09-27_final_candidate_v2.zip` = all ten at their best public version (K: ad,
+  power, social, supply, traffic; E: epidemic, reservoir; G: market; I: hospital, wildlife),
+  every folder proven identical in forecasts to the upload it was scored from. This is what the
+  repo builds now, and the default final.
+- Reservoir V1P (Sep 27, scratch `J/reservoir_v1*`): E with only the outflow capacity switched
+  to c0 + c1*sqrt(level) and the water params refit on all four logs (season length P held at
+  E's 67.773; the fit's 67.82 scores the same on our data but drifts the inflow cycle ~3 steps
+  by step 4,000). Quality is E's, byte for byte, so a public test isolates round K's water fix
+  from its two-layer quality. All logs 0.8955/0.9019 -> 0.9055/0.9273, honest J +0.004/+0.013
+  (quality unchanged by design; level on J 0.796 -> 0.843 d1). Test zip:
+  `uploads/2026-09-27_L_reservoir_v1p.zip` (not uploaded yet). If it beats 0.8447, splice
+  `J/reservoir_v1p` into the repo; if not, reservoir stays on E.
+
 ## Next steps
 
 1. Done Sep 24: `check_setup.py` passed, documents read (see Findings).
