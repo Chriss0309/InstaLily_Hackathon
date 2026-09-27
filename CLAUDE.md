@@ -304,6 +304,15 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   (> 0.7333): the reported wait fades ~11%/step whenever nobody waits (every run), 2 code lines;
   all logs 0.924/0.882 -> 0.925/0.886, CV +0.0004/+0.0034. social: nothing passed (five
   structures, each loses held-out f1 or c1), K stays.
+- Upload O (public, Sep 27 Toronto) scored: epidemic age3 0.7452 (age2 0.7431), wildlife A 0.7493
+  (I 0.7485), market Bt 0.6655 (G 0.6654), hospital a0 0.7332 (waitdn 0.7333). Epidemic, wildlife
+  and market spliced into the repo; hospital stays on waitdn. Large gains on our own data (market
+  price d1 on base 0.63 -> 0.81, wildlife CV +0.032 d1) moved the public score by only +0.0001 to
+  +0.002, so the hidden episodes lose their points somewhere our runs do not look. Best public:
+  ad_auction 0.8811, epidemic 0.7452, hospital 0.7333, market 0.6655, power_grid 0.8169,
+  reservoir 0.8613, social 0.5512, supply_chain 0.8120, traffic 0.8377, wildlife 0.7493; mean
+  0.7654. `uploads/2026-09-27_final_candidate_v6.zip` = all ten at those versions, every folder
+  proven identical in forecasts to its scored upload (`compare_zips.py`). This is the default final.
 
 ## Next steps
 

@@ -66,26 +66,43 @@ def _f(d, key, default=0.0):
 # (1 / (1 + bh * H/cap)); referrals per case rise with school closure (hs, older age
 # mix) and with vaccination (hv, shared clinic workforce). Masks carry most of the
 # restriction effect, school closure little. Age groups otherwise ignored.
-# Fitted on all three research runs (scratchpad E/epidemic).
+# Round N age2 (fy > 0): two age groups. Round N age3 (fe > 0, scratchpad N/epidemic_age3):
+# three groups, children (y, 15%: school closure cuts their own contacts by half and moves
+# some home), young adults (e, 12%: high contact, mild, slow recovery) and adults/elderly
+# (o, 73%: severe, fast recovery). Fitted on all four logs; E's single-group path is kept.
 DEFAULTS["epidemic"] = dict(
-    N=18646.41367192948,       # population
-    s0=1.0,                    # susceptible fraction cap at reset (not binding: S = N - E - I)
-    rI=5.050754028127234,      # infectious per initial daily case
-    beta=0.44806734996298114,  # transmission per step at full contact
-    sigma=0.40623995640848354, # latent stage exit rate (2 stages)
-    gamma=0.14472651613652904, # recovery rate per step
-    omega=0.009601018340951832, # immunity waning rate per step
-    a_s=0.036083109003154354,  # contact reduction at full school closure
-    a_m=0.38188557470949186,   # exposure reduction at full mask mandate
-    v_eff=0.6787575878795006,  # fraction of vaccination_rate*S immunized per step
-    h=0.05451534864245651,     # hospital referrals per onset
-    k_c=0.1376297200054615,    # referral pipeline rate per step
-    d=0.07619603943561191,     # hospital discharge rate per step
-    cap=155.18613733120998,    # hard bed cap
-    wl=0.03573089168068964,    # share of the bed waiting list that leaves per step
-    bh=0.31885890020465174,    # behavior: contact cut per unit hospital pressure H/cap
-    hs=0.06482224419159772,    # extra referrals per onset at full school closure (fraction)
-    hv=0.09257700840017434,    # extra referrals per onset at full vaccination (fraction)
+    N=20061.63799991638,           # population
+    s0=1.0,                        # susceptible fraction cap at reset (unused by the age model)
+    rI=3.6579150162006453,         # infectious per initial daily case
+    beta=1.5350962671397375,       # transmission per step at full contact
+    sigma=0.41322677134459246,     # latent stage exit rate (2 stages)
+    gamma=0.11743375570402853,     # children's recovery rate per step
+    omega=0.010461329282921062,    # immunity waning rate per step
+    a_s=0.5148101673688945,        # cut of child-child contacts at full school closure
+    a_m=0.32131784924339,          # exposure reduction at full mask mandate
+    v_eff=0.864759195180686,       # fraction of vaccination_rate*S immunized per step
+    h=0.0024150853233538164,       # children's hospital referrals per onset
+    k_c=0.0748472247911112,        # referral pipeline rate per step
+    d=0.12943486530759446,         # hospital discharge rate per step
+    cap=155.1794119777753,         # hard bed cap
+    wl=0.07051289918672625,        # share of the bed waiting list that leaves per step
+    bh=0.08861573055525511,        # behavior: contact cut per unit hospital pressure H/cap
+    hs=0.12159472706239141,        # extra referrals per onset at full school closure (fraction)
+    hv=9.987537842493026e-11,      # extra referrals per onset at full vaccination (fraction)
+    fy=0.15177892296716303,        # children's population share
+    iy=0.12275112924470033,        # children's share of the initial infections
+    cyo=0.09143147380908338,       # child-adult contact (relative to child-child)
+    coo=0.7660395905955943,        # adult-adult contact
+    ho=54.89550585179882,          # adults' referral multiple of children's
+    go=4.4282349676564134,         # adults' recovery multiple of gamma
+    a_sh=0.09589374103857465,      # rise of child-adult/child-young-adult contacts at full school closure (home)
+    fe=0.12433796153516642,        # young adults' population share
+    ie=0.1263727738071894,         # young adults' share of the initial infections
+    rce=5.208199867772987,         # child-young-adult contact / child-adult contact
+    ree=2.8689280673463946,        # young-adult-young-adult contact / adult-adult contact
+    rae=0.035265225523906325,      # adult-young-adult contact / adult-adult contact
+    he=0.452138279264782,          # young adults' referral multiple of adults'
+    ge=0.20762459057616522,        # young adults' recovery multiple of adults'
 )
 
 
@@ -101,6 +118,16 @@ def start_epidemic(init, p):
         Ny, No = fy * N, (1 - fy) * N
         s = dict(E1y=iy * E1, E2y=iy * E2, Iy=iy * I, E1o=(1 - iy) * E1, E2o=(1 - iy) * E2, Io=(1 - iy) * I,
                  Ry=0.0, Ro=0.0, C=0.0, W=0.0, H=_pos(_f(init, "hospital_load")))
+        fe = p.get("fe", 0.0)
+        if fe:
+            # three age groups: a third group e (share fe) next to y and o
+            ie = p.get("ie", 0.0)
+            No = (1 - fy - fe) * N
+            for k, v in (("E1", E1), ("E2", E2), ("I", I)):
+                s[k + "o"] = (1 - iy - ie) * v
+                s[k + "e"] = ie * v
+            s["Re"] = 0.0
+            s["Se"] = _pos(fe * N - s["E1e"] - s["E2e"] - s["Ie"])
         s["Sy"] = _pos(Ny - s["E1y"] - s["E2y"] - s["Iy"])
         s["So"] = _pos(No - s["E1o"] - s["E2o"] - s["Io"])
         return s
@@ -122,12 +149,27 @@ def _adv_epidemic_age(s, a, p):
     cyo = p["cyo"] * (1 + p.get("a_sh", 0.0) * sc)
     coo = p["coo"]
     Iy, Io = s["Iy"], s["Io"]
-    lam_y = b * (cyy * Iy + cyo * Io) / N
-    lam_o = b * (cyo * Iy + coo * Io) / N
+    hh = p["h"] * (1 + p["hs"] * sc) * (1 + p["hv"] * vr / 0.003)
+    go = p["gamma"] * p.get("go", 1.0)
+    if "Se" in s:
+        # three groups: children (y), adults/elderly (o), young adults (e). Contacts y-e = rce x
+        # y-o (both raised by school closure), o-e = rae x o-o, e-e = ree x o-o; group e is
+        # referred he times as often as group o and recovers at ge x its rate.
+        Ie = s["Ie"]
+        cye = cyo * p["rce"]
+        cae, cee = coo * p["rae"], coo * p["ree"]
+        lam_y = b * (cyy * Iy + cyo * Io + cye * Ie) / N
+        lam_o = b * (cyo * Iy + coo * Io + cae * Ie) / N
+        lam_e = b * (cye * Iy + cae * Io + cee * Ie) / N
+        groups = (("y", lam_y, p["gamma"], hh), ("o", lam_o, go, hh * p["ho"]),
+                  ("e", lam_e, go * p["ge"], hh * p["ho"] * p["he"]))
+    else:
+        lam_y = b * (cyy * Iy + cyo * Io) / N
+        lam_o = b * (cyo * Iy + coo * Io) / N
+        groups = (("y", lam_y, p["gamma"], hh), ("o", lam_o, go, hh * p["ho"]))
     ons = 0.0
     ref_in = 0.0
-    hh = p["h"] * (1 + p["hs"] * sc) * (1 + p["hv"] * vr / 0.003)
-    for g, lam, gam, hg in (("y", lam_y, p["gamma"], hh), ("o", lam_o, p["gamma"] * p.get("go", 1.0), hh * p["ho"])):
+    for g, lam, gam, hg in groups:
         S, E1, E2, I, R = s["S" + g], s["E1" + g], s["E2" + g], s["I" + g], s["R" + g]
         inf = min(lam * S, S)
         vax = min(p["v_eff"] * vr * S, S - inf)
@@ -186,36 +228,38 @@ START["epidemic"], ADVANCE["epidemic"] = start_epidemic, adv_epidemic
 
 
 # ------------------------------------------------------------------ market
-# Round G (scratchpad G/market). Price follows its target through a two-stage lag:
-# stage 1 (pf, committed orders) is faster falling (k_p) than recovering (k_pu), stage 2
-# (execution) follows pf at k_p2. Round F showed transaction tax changes how the rate
-# moves price: joint pulses fall later but deeper (floor ~65.9 vs ~72.2 for rate alone),
-# and a rate drop keeps going under a following tax (no recovery while tax is on). So:
-#   c_t1: tax slows stage 1 in both directions (k / (1 + c_t1 * tax/0.05)).
-#   a_amp: tax deepens the committed move at execution: (p0 - pf) * (1 + a_amp * tax/0.05).
-#   a_rate_p, a_amp are held at the observed plateaus (c1 rate-alone 72.2, base joint 65.9)
-#   so long holds settle where the data settled.
-#   b_vp, b_dp: volume rises and depth falls while price is moving (per unit |price step|).
-# Volume and depth otherwise relax first-order. Calm levels are fitted constants.
-# a_tax_v and a_rate_v stay tied (a_tax_v = 2 * a_rate_v); keep the tie when refitting.
+# Round N candidate B (scratchpad N/market: fit_B.py, cv_B.py). G with its execution stage replaced.
+#   Target and commitment (as G): tp = p0 (1 - a_rate_p r); the committed price pf follows tp at
+#   k_p (falling) / k_pu (rising), slowed by tax: k / (1 + c_t1 g), g = tax / 0.05; the tax deepens
+#   the committed move: q = p0 - (p0 - pf)(1 + a_amp g). a_rate_p, a_amp stay at G's observed
+#   plateaus (rate alone 72.2, joint 65.9), so every long hold settles where G settles.
+#   Execution (new, replaces G's first-order k_p2 stage): price moves at velocity u, which relaxes at
+#   k_a / (1 + c_t2 g) toward k_g (q - price), capped at v_dn falling and v_up rising. Data: rate alone falls
+#   ~0.5-0.65/step after a few steps; recoveries climb ~0.19/step nearly linearly (base 66 -> 94 in
+#   150 steps, where G's exponential recovery ran 5-6 too high); falls end abruptly.
+# Volume and depth as in G (they react to |price step|). a_tax_v stays tied to 2 * a_rate_v.
 DEFAULTS["market"] = dict(
-    p0=94.18772,  # calm price level (0 = take from initial)
-    v0=1.84674,  # calm volume level (0 = take from initial)
-    d0=90.97057,  # calm depth level (0 = take from initial)
+    p0=94.182592685267,  # calm price level (0 = take from initial)
+    v0=1.9299613518658163,  # calm volume level (0 = take from initial)
+    d0=91.05954368437139,  # calm depth level (0 = take from initial)
     a_rate_p=2.33,  # price target falls a_rate_p * interest_rate (fixed: rate plateau)
-    a_tax_v=1.04083,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
-    a_rate_v=0.52041,  # volume target falls a_rate_v * interest_rate
-    a_vol_d=-0.0129,  # depth target change per unit of volume above baseline
-    a_tax_d=10.80974,  # depth target falls a_tax_d * tax
-    k_p=0.10511,  # price lag stage 1, target below pf (falling)
-    k_pu=0.01744,  # price lag stage 1, target above pf (recovering)
-    k_p2=0.03586,  # price lag stage 2
-    k_v=0.30562,  # volume relaxation rate
-    k_d=0.12142,  # depth relaxation rate
-    c_t1=2.63671,  # tax slows price stage 1
+    a_tax_v=1.6210974072811972,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
+    a_rate_v=0.8105487036405986,  # volume target falls a_rate_v * interest_rate
+    a_vol_d=-0.011981807873515833,  # depth target change per unit of volume above baseline
+    a_tax_d=10.790294478921561,  # depth target falls a_tax_d * tax
+    k_p=0.055698344868887084,  # commitment rate, target below pf (falling)
+    k_pu=0.05545682679982994,  # commitment rate, target above pf (recovering)
+    k_v=0.29103486962775266,  # volume relaxation rate
+    k_d=0.11784409200570035,  # depth relaxation rate
+    c_t1=1.107826297901977,  # tax slows commitment
     a_amp=0.289,  # tax deepens the committed price move (fixed: joint floor)
-    b_vp=1.79483,  # volume target rise per unit |price step|
-    b_dp=7.91325,  # depth target drop per unit |price step|
+    b_vp=1.4146386837107805,  # volume target rise per unit |price step|
+    b_dp=8.726107660843898,  # depth target drop per unit |price step|
+    k_a=0.08734084747324604,  # execution: velocity relaxation rate
+    k_g=0.06755362947416908,  # execution: desired velocity per unit gap to target
+    v_dn=0.7087699859633968,  # execution: speed cap falling (per step)
+    v_up=0.19086163086910218,  # execution: speed cap rising (per step)
+    c_t2=0.8737016160885702,  # tax slows the velocity relaxation
 )
 
 
@@ -223,7 +267,7 @@ def start_market(init, p):
     price = _f(init, "price", 1.0)
     vol = _pos(_f(init, "volume"))
     dep = _pos(_f(init, "depth"))
-    return dict(price=price, volume=vol, depth=dep, pf=price,
+    return dict(price=price, volume=vol, depth=dep, pf=price, u=0.0,
                 p0=p["p0"] if p["p0"] > 0 else price,
                 v0=p["v0"] if p["v0"] > 0 else max(vol, 1e-6),
                 d0=p["d0"] if p["d0"] > 0 else max(dep, 1e-6))
@@ -235,14 +279,16 @@ def adv_market(s, a, p):
     g = tax / 0.05
     tp = s["p0"] * _pos(1 - p["a_rate_p"] * r)
     k1 = p["k_pu"] if tp > s["pf"] else p["k_p"]
-    s["pf"] += _clip(k1, 0, 1) / (1 + _pos(p.get("c_t1", 0.0)) * g) * (tp - s["pf"])
-    q = _pos(s["p0"] - (s["p0"] - s["pf"]) * (1 + _pos(p.get("a_amp", 0.0)) * g))
+    s["pf"] += _clip(k1, 0, 1) / (1 + _pos(p["c_t1"]) * g) * (tp - s["pf"])
+    q = _pos(s["p0"] - (s["p0"] - s["pf"]) * (1 + _pos(p["a_amp"]) * g))
+    us = _clip(p["k_g"] * (q - s["price"]), -_pos(p["v_dn"]), _pos(p["v_up"]))
+    s["u"] += _clip(p["k_a"], 0, 1) / (1 + _pos(p["c_t2"]) * g) * (us - s["u"])
     old = s["price"]
-    s["price"] += _clip(p["k_p2"], 0, 1) * (q - s["price"])
+    s["price"] = _pos(old + s["u"])
     dp = abs(s["price"] - old)
-    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r) + _pos(p.get("b_vp", 0.0)) * dp
+    tv = s["v0"] * _pos(1 - p["a_tax_v"] * tax - p["a_rate_v"] * r) + _pos(p["b_vp"]) * dp
     td = s["d0"] * _pos(1 - p["a_vol_d"] * (s["volume"] / s["v0"] - 1) - p["a_tax_d"] * tax) \
-        - _pos(p.get("b_dp", 0.0)) * dp
+        - _pos(p["b_dp"]) * dp
     s["volume"] += _clip(p["k_v"], 0, 1) * (tv - s["volume"])
     s["depth"] += _clip(p["k_d"], 0, 1) * (_pos(td) - s["depth"])
     return {"price": s["price"], "volume": s["volume"], "depth": s["depth"]}
@@ -696,6 +742,12 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 # die at tmd per step, so an open corridor keeps predators low for as long as it stays open
 # (round C: 2.33 -> 1.67 in 60 steps; round H: 1.76 at 70% for 200 steps).
 # Predator crowding saturates at high density (reset predators 8-15 fall fast, then settle near 2.3).
+# Round N (Sep 27, scratchpad N/wildlife): part wq of predator growth follows prey availability
+# prey / (prey + Hq), lagged tq steps. Data: after prey is held low (hunting alone, rounds C and F)
+# predators keep falling below their 2.33 rest level to 2.04-2.12 some 20-30 steps after the prey low,
+# then recover; after the corridor closes with prey high they climb to 2.8. The south scale hs makes
+# both regions see the same availability at rest (data: ~2.34 in both). Prey never depends on
+# predators, so only the predator params were refit; prey forecasts are byte-identical to round I.
 DEFAULTS["wildlife"] = dict(
     b=0.6362021787044908,  # prey births per capita at low density (b - mu ~ 0.14/step: regrowth of a thin herd)
     mu=0.4999951619736701,  # prey death rate (b and mu act as a pair; the fit sits at fit_i's cap mu <= 0.5)
@@ -713,19 +765,23 @@ DEFAULTS["wildlife"] = dict(
     Hs=20.075573650419937,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
     sh_n=0.028176737367711778,  # shelter: hunting exposure 1 - sh*hab, north
     sh_s=0.0007775495732185203,  # shelter, south
-    a=0.04905029861810504,  # predator growth at abundant prey
-    Hp=1.0548383106089296,  # prey level for half predator growth
-    m=7.612037624790867e-05,  # predator death rate
-    k=0.03254795359959699,  # predator crowding
-    Dk=4.101246942704927,  # predator level where crowding per predator halves
+    a=0.09466493278312071,  # predator growth at full prey availability
+    Hp=4.009381063116096e-12,  # prey level for half instant predator growth (fit ~0: no instant effect)
+    m=3.942449579515096e-05,  # predator death rate
+    k=0.040122635309429305,  # predator crowding
+    Dk=3.3724738403102057,  # predator level where crowding per predator halves
     Hv=2.09556997964094e-08,  # prey level where half the predators are counted
     ep_n=0.046769319563386876,  # prey leaving the north per step at full corridor access
     ep_s=0.06084258159428294,  # prey leaving the south per step at full corridor access
-    ed_n=0.03575732963153821,  # predators leaving the north per step at full corridor access
-    ed_s=0.03655340930869652,  # predators leaving the south per step at full corridor access
+    ed_n=0.03332994962615676,  # predators leaving the north per step at full corridor access
+    ed_s=0.03492132141867677,  # predators leaving the south per step at full corridor access
     tp=33.04544506024473,  # prey transit pool: 1/tp of it settles in the other region per step
-    td=13.92757536048174,  # predator transit pool: 1/td settles per step
-    tmd=0.02344325674642063,  # predators in transit that die per step
+    td=17.980407994409184,  # predator transit pool: 1/td settles per step
+    tmd=0.01031754839781484,  # predators in transit that die per step
+    wq=0.5052065678128667,  # share of predator growth that follows lagged prey availability
+    Hq=499.9999992470716,  # prey level for half availability (fit at its 500 bound: ~linear in prey below 200)
+    tq=20.22728364902498,  # availability lag (steps)
+    hs=0.7819803451977867,  # south availability scale, Hq*hs: pinned to the rest prey ratio 94.69/121.09 so both regions rest at one predator level (data ~2.34)
 )
 
 
@@ -735,9 +791,11 @@ def start_wildlife(init, p):
     dn = _pos(_f(init, "predator_north")) * (pn + hv) / max(pn, 1e-6)
     ds = _pos(_f(init, "predator_south")) * (ps + hv) / max(ps, 1e-6)
     f0 = min(p["F0"], 1.0)
+    hq = max(p["Hq"], 1e-9)
     # go = animals that left last step (prey to north, prey to south, predators to north, to south)
+    # qn, qs = lagged prey availability seen by predators, starting from the first reading
     return dict(pn=pn, ps=ps, dn=dn, ds=ds, fn=f0, fs=f0, go=(0.0, 0.0, 0.0, 0.0),
-                wpn=0.0, wps=0.0, wdn=0.0, wds=0.0)
+                wpn=0.0, wps=0.0, wdn=0.0, wds=0.0, qn=pn / (pn + hq), qs=ps / (ps + hq * p["hs"]))
 
 
 def adv_wildlife(s, a, p):
@@ -756,7 +814,11 @@ def adv_wildlife(s, a, p):
         v = prey + prey * (birth - death) - harvest
         s["p" + reg] = v if v > 1e-6 else 1e-6
         crowd = p["k"] * pred / (1.0 + pred / p["Dk"])
-        v = pred + pred * (p["a"] * prey / (prey + p["Hp"]) - p["m"] - crowd)
+        q = s["q" + reg]
+        grow = p["a"] * prey / (prey + p["Hp"]) * (1.0 - p["wq"] + p["wq"] * q)
+        hq = max(p["Hq"] * (p["hs"] if reg == "s" else 1.0), 1e-9)
+        s["q" + reg] = q + (prey / (prey + hq) - q) / max(p["tq"], 1.0)
+        v = pred + pred * (grow - p["m"] - crowd)
         s["d" + reg] = v if v > 1e-6 else 1e-6
     # corridor: journeys start only while it is open; animals already travelling still arrive
     xpn = _clip(p["ep_n"] * cor, 0.0, 1.0) * s["pn"]; xps = _clip(p["ep_s"] * cor, 0.0, 1.0) * s["ps"]
