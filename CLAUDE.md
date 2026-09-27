@@ -232,6 +232,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   holds move at most 0.3 d1-sigma, all toward the J data (70% hold quality 0.926 -> 0.940), none
   of round K's big no-aeration drops. Public test zip `uploads/2026-09-27_M_reservoir_v2.zip`;
   keep only if it beats V1P's 0.8613.
+- Traffic B2 (Sep 27, scratch `J/traffic_L/B2`, agent + my re-check): speed equation only.
+  Moving vehicles count 0.78 of a stopped one; speed recovers at 0.06/step while a route still
+  has cars and 0.19/step once it is empty (data: speed stays low while the queue drains, then
+  jumps); lane closure lowers route b's free speed (5.4 x lane, ~2x the empty-road data, but set
+  by the loaded pulses). ct stays 0.5; route a's exit capacity X_a kept at K's 66.8 (the fit ran it
+  to its 2,000 bound, but no log changes anywhere between 67 and 1,995). Honest L +0.013/+0.034;
+  all logs 0.8614/0.8578 -> 0.8684/0.8724; worst older log _j1 -0.008/-0.004; ramp-alone speeds
+  30.2/31.1 (data 31.5/30.6, K 27.6/28.2). Test zip `uploads/2026-09-27_M_traffic_b2.zip`; keep
+  only if it beats K's 0.8305. The persistent speed drop after pulses (data 2.35 after a 100-step
+  pulse, ~1 after J and after four 30-step pulses) and a journey-time speed are still unmodeled.
 
 ## Next steps
 
