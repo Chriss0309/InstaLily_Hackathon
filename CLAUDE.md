@@ -253,9 +253,12 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   steps (150-650 goods onto the shelf; the brief's rework path?), and round L's faster flow with
   earlier supplier refill says production or congestion depends on product mix.
 - Upload M (public, Sep 27 Toronto) scored: traffic B2 0.8377 (K 0.8305), supply_chain two-intake
-  0.8120 (K 0.8085). Both win; neither is spliced into the repo yet (the repo still builds K for
-  both). Reservoir V2 not uploaded yet. Slots left Sep 27: reservoir, supply, traffic 1; ad,
-  power, social 2; epidemic, hospital, market, wildlife 3.
+  0.8120 (K 0.8085). Both win and are spliced into the repo (blocks and model.json copied from
+  the M zips). `uploads/2026-09-27_final_candidate_v4.zip` = v3 with M's traffic and supply;
+  `compare_zips.py` shows those two identical to the M uploads and the other eight identical to
+  v3. Best public mean 0.759. This is the default final. Reservoir V2 not uploaded yet. Slots
+  left Sep 27: reservoir, supply, traffic 1; ad, power, social 2; epidemic, hospital, market,
+  wildlife 3.
 - Round N (Sep 27, this cloud session, scratch only): public uploads used as experiments for the
   four weakest systems. Tools rebuilt in the scratchpad: the harness (both rulers), 4,000-step hold
   scans, and "hidden-like" episodes (my guess at the four categories: stresses at 70-100% of the
