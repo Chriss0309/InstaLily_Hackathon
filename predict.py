@@ -94,13 +94,67 @@ def start_epidemic(init, p):
     c0 = _pos(_f(init, "daily_cases"))
     E1 = E2 = c0 / max(p["sigma"], 1e-6)   # onsets = sigma * E2
     I = p["rI"] * c0
+    fy = p.get("fy", 0.0)
+    if fy:
+        # Round N, two age groups (young / old): the initial infections split in a fixed mix
+        iy = p.get("iy", fy)
+        Ny, No = fy * N, (1 - fy) * N
+        s = dict(E1y=iy * E1, E2y=iy * E2, Iy=iy * I, E1o=(1 - iy) * E1, E2o=(1 - iy) * E2, Io=(1 - iy) * I,
+                 Ry=0.0, Ro=0.0, C=0.0, W=0.0, H=_pos(_f(init, "hospital_load")))
+        s["Sy"] = _pos(Ny - s["E1y"] - s["E2y"] - s["Iy"])
+        s["So"] = _pos(No - s["E1o"] - s["E2o"] - s["Io"])
+        return s
     S = min(p["s0"], 1.0) * N
     S = min(S, N - E1 - E2 - I)
     R = _pos(N - S - E1 - E2 - I)
     return dict(S=S, E1=E1, E2=E2, I=I, R=R, C=0.0, W=0.0, H=_pos(_f(init, "hospital_load")))
 
 
+def _adv_epidemic_age(s, a, p):
+    # Round N, two age groups: young (share fy) mix among themselves at school (cut by school
+    # closure, a_s) and with the old (cyo, raised by school closure: contacts move home, a_sh);
+    # the old mix among themselves (coo), are referred ho times more often per onset and
+    # recover at go x gamma. Masks, behavior, vaccination, waning, pipeline, beds as in E.
+    N = max(p["N"], 1.0)
+    sc = _f(a, "school_closure"); vr = _f(a, "vaccination_rate")
+    b = p["beta"] * (1 - p["a_m"] * _f(a, "mask_mandate")) / (1 + p["bh"] * s["H"] / p["cap"])
+    cyy = 1 - p["a_s"] * sc
+    cyo = p["cyo"] * (1 + p.get("a_sh", 0.0) * sc)
+    coo = p["coo"]
+    Iy, Io = s["Iy"], s["Io"]
+    lam_y = b * (cyy * Iy + cyo * Io) / N
+    lam_o = b * (cyo * Iy + coo * Io) / N
+    ons = 0.0
+    ref_in = 0.0
+    hh = p["h"] * (1 + p["hs"] * sc) * (1 + p["hv"] * vr / 0.003)
+    for g, lam, gam, hg in (("y", lam_y, p["gamma"], hh), ("o", lam_o, p["gamma"] * p.get("go", 1.0), hh * p["ho"])):
+        S, E1, E2, I, R = s["S" + g], s["E1" + g], s["E2" + g], s["I" + g], s["R" + g]
+        inf = min(lam * S, S)
+        vax = min(p["v_eff"] * vr * S, S - inf)
+        on = p["sigma"] * E2
+        mv = p["sigma"] * E1
+        rec = gam * I
+        wane = p["omega"] * R
+        s["S" + g] = S + wane - inf - vax
+        s["E1" + g] = E1 + inf - mv
+        s["E2" + g] = E2 + mv - on
+        s["I" + g] = I + on - rec
+        s["R" + g] = R + rec + vax - wane
+        ons += on
+        ref_in += hg * on
+    ref = p["k_c"] * s["C"]
+    s["C"] += ref_in - ref
+    s["W"] += ref
+    Hd = (1 - p["d"]) * s["H"]
+    adm = min(s["W"], _pos(p["cap"] - Hd))
+    s["W"] = (s["W"] - adm) * (1 - p["wl"])
+    s["H"] = Hd + adm
+    return {"daily_cases": ons, "hospital_load": s["H"]}
+
+
 def adv_epidemic(s, a, p):
+    if "Sy" in s:
+        return _adv_epidemic_age(s, a, p)
     N = max(p["N"], 1.0)
     sc = _f(a, "school_closure"); vr = _f(a, "vaccination_rate")
     b = p["beta"] * (1 - p["a_s"] * sc) * (1 - p["a_m"] * _f(a, "mask_mandate")) \
@@ -1144,7 +1198,8 @@ def adv_hospital(s, a, p):
     s["Dbar"] += (D - s["Dbar"]) / max(p["tb"], 1.0)
     out_rate = s["Dbar"] + p["r"] * waiting
     T = p["cw"] * waiting / out_rate if out_rate > 1e-9 else 0.0
-    s["w"] += p["alpha"] * (T - s["w"])
+    al = p["alpha"] if T >= s["w"] else p.get("alpha_dn", p["alpha"])
+    s["w"] += al * (T - s["w"])
     for c in pend:
         c[0] += 1
     while pend and pend[0][0] >= To + 1.0:

@@ -273,6 +273,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   + market c1 + reservoir V2 (each folder proven identical to its source zip). Keep a system only if
   it beats: epidemic 0.6870, social 0.5512, hospital 0.7328, market 0.6654, reservoir 0.8613.
   If age2 loses, `uploads/2026-09-27_N_epidemic_refit.zip` is the next epidemic test.
+- Upload N (public, Sep 27 Toronto, `uploads/2026-09-27_N_five_probes.zip`) scored: epidemic age2
+  0.7431 (E 0.6870, +0.056), hospital waitdn 0.7333 (I 0.7328), social usat 0.5470 (K 0.5512),
+  reservoir V2 0.8536 (V1P 0.8613), market c1 0.6645 (G 0.6654). Epidemic age2 and hospital waitdn
+  spliced into the repo; social, reservoir and market stay (K, V1P, G). So incentive does not
+  simply saturate at 70%, release/irrigation weights in reservoir quality do not help, and any
+  dealer hold loses in market. Best public per system: ad_auction 0.881, epidemic 0.743, hospital
+  0.733, market 0.665, power_grid 0.817, reservoir 0.861, social 0.551, supply_chain 0.812,
+  traffic 0.838, wildlife 0.749; mean 0.765. `uploads/2026-09-27_final_candidate_v5.zip` = all ten
+  at those versions, every folder proven identical in forecasts to its scored upload. This is the
+  default final.
 
 ## Next steps
 
