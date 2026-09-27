@@ -283,6 +283,25 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   traffic 0.838, wildlife 0.749; mean 0.765. `uploads/2026-09-27_final_candidate_v5.zip` = all ten
   at those versions, every folder proven identical in forecasts to its scored upload. This is the
   default final.
+- Round O (Sep 27 Toronto, 5 agents, scratch `N/`; every candidate re-checked here: code identical
+  to the repo outside its block, gate x2, both rulers, 4,000-step scan). One public test zip,
+  `uploads/2026-09-27_O_four_probes.zip`; keep a system only if it beats its best public score:
+  epidemic age3 (keep if > 0.7431): age2's young group split into children 15% (school closure
+  cuts their contacts 51% and moves ~10% home) and young adults 12%; adults and elderly 73% as
+  age2's old group. All logs 0.960/0.901 -> 0.962/0.904; leave-one-log-out mean +0.010/+0.020,
+  but held-out c1 -0.014 d1 (fails the 0.01 floor: outside c1, school and masks always move
+  together). wildlife A (> 0.7485): about half of predator growth follows prey availability
+  lagged ~20 steps; prey forecasts byte-identical to I. All logs 0.922/0.817 -> 0.927/0.829; CV
+  up on every held-out log, mean +0.015/+0.032; passes every ship rule. market Bt (> 0.6654): G
+  plus an execution stage where price moves with inertia and speed caps (falls <= 0.71/step,
+  recovers <= 0.19/step, so recoveries are linear like the data); tax also slows it; same settle
+  levels as G. All logs 0.879/0.776 -> 0.889/0.797 (price d1: base 0.63 -> 0.81, f1 0.63 -> 0.75,
+  c1 0.73 -> 0.72); CV up on every held-out log from both starting points; misses the in-sample
+  c1 floor by 0.0024 d1; overshoots calm by 0.3-0.5 after a pulse (data: none). Its sibling A
+  (plus a fading tax lift) lost held-out f1 and overshoots more: not uploaded. hospital a0
+  (> 0.7333): the reported wait fades ~11%/step whenever nobody waits (every run), 2 code lines;
+  all logs 0.924/0.882 -> 0.925/0.886, CV +0.0004/+0.0034. social: nothing passed (five
+  structures, each loses held-out f1 or c1), K stays.
 
 ## Next steps
 
@@ -627,6 +646,31 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
 - Upload windows (kit/PROMPT.md): public and final uploads both stay open until Sep 30 12:00
   Toronto and share the 3 slots per system per day. So public tests can continue Mon-Wed; keep
   1 slot per system per day for a final update.
+- Round O data notes (agents' reports, Sep 27):
+  hospital: at the 70% hold the wait keeps climbing (implied target 36 -> 75 from step 20 to 150)
+  while the queue sits flat at ~323, so the wait acts like accumulated waiting, not a function of
+  the current queue. Two stages look real: diag 0.75 at staff 20 keeps the wait ~0 until the queue
+  reaches ~88; staff 5 raises it from the first step at queue 34. After elective phases 80-100
+  patients linger with discharges 11.1 below arrivals 11.5. Staffing 15 alone leaves the queue at
+  26.4 until 73 steps after staffing is back at 20; after diag 0.75 ends it holds at 38, not 23.
+  market: calm price differs between runs (94.3, 94.7, 93.1), more than noise. After the joint
+  pulse price recovers linearly at 0.206/step all the way to 93.8; after rate alone it climbs
+  0.19/step to 89, then stalls at 0.04/step. Tax alone lifts price ~5 in c1 but not at all in f1
+  run 1 (right after reset). Price keeps falling ~3 after every joint pulse in f1.
+  wildlife: predators follow prey with a ~20-step lag (after hunting-alone prey lows they fall to
+  2.04-2.12 some 20-30 steps later; corridor closed with prey high: up to 2.8). Prey misses left:
+  the post-pulse peak depends too little on pulse length (model 159 vs data 143 after 30-step
+  pulses, 173 vs 200 after 100 steps); south prey under hunting alone floors ~16 (data 12);
+  corridor alone steps down to a ~109/75 plateau; north prey holds ~137 after the corridor
+  closes (model 122).
+  social: in the seeding-then-incentive run A falls 1.3-2/step under the incentive (K flat at
+  229), then decays ~0.07/step to ~65. Seeding right after an incentive recruits less (A +100 in
+  40 steps vs +154 from calm), so K's expectation churn on seeded recruits is real. Queuing
+  organic recruits reproduces the reset dip but costs c1.
+  epidemic: c1 is the only log that moves school closure and masks separately.
+  Fitting: soft-L1 least squares pulls small-error params away from the score's optimum
+  (hospital a0 0.05 vs the score's 0.10); a score-shaped residual sqrt(1 - 1/(1+|e|/sigma))
+  matches it. Multi-threaded BLAS makes fits 5-10x slower on shared CPUs: OMP_NUM_THREADS=1.
 
 
 ## More info please refer to the webpage: 
