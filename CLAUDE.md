@@ -338,6 +338,18 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   0.929/0.836, better on held-out logs. epidemic A_full (> 0.7452): vaccinated people get their
   own immunity pool that wanes at 0.86x the natural rate (below 1 in all 12 CV folds); all
   0.962/0.904 -> 0.964/0.908.
+- Upload P (public, Sep 27 Toronto) scored: social A 0.5707 (K 0.5512, +0.0195), wildlife A2
+  0.7564 (0.7493, +0.0071), epidemic A_full 0.7492 (0.7452, +0.0040), market A 0.6618 (Bt
+  0.6655), hospital A 0.6253 (waitdn 0.7333, -0.108). Social, wildlife and epidemic spliced into
+  the repo; market stays on Bt (the dealer-hold family has now lost three times: I, c1, A);
+  hospital stays on waitdn. Lessons: fixing a physically silly in-between behavior paid (social);
+  a params-only refit with a score-shaped loss paid (wildlife); hospital's hidden episodes spend
+  a lot of time at or near the calm setting and the real queue stays calm there, so the
+  sub-critical story is wrong, and the fingerprint test's level can mislead badly (it favored A).
+  Best public: ad_auction 0.8811, epidemic 0.7492, hospital 0.7333, market 0.6655, power_grid
+  0.8169, reservoir 0.8613, social 0.5707, supply_chain 0.8120, traffic 0.8377, wildlife 0.7564;
+  mean 0.7684. `uploads/2026-09-27_final_candidate_v7.zip` = all ten at those versions, every
+  folder proven identical in forecasts to its scored upload. This is the default final.
 
 ## Next steps
 

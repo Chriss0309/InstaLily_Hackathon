@@ -70,39 +70,43 @@ def _f(d, key, default=0.0):
 # three groups, children (y, 15%: school closure cuts their own contacts by half and moves
 # some home), young adults (e, 12%: high contact, mild, slow recovery) and adults/elderly
 # (o, 73%: severe, fast recovery). Fitted on all four logs; E's single-group path is kept.
+# Round P (wv > 0, scratchpad N/epidemic2): vaccine-derived immunity sits in its own pool V per
+# group and wanes at wv x omega (age3 put the vaccinated into R, i.e. wv = 1). Variant A_full: every
+# param but s0 refit on all four logs from age3's numbers (full_F2.json).
 DEFAULTS["epidemic"] = dict(
-    N=20061.63799991638,           # population
+    N=19250.576709109024,          # population
     s0=1.0,                        # susceptible fraction cap at reset (unused by the age model)
-    rI=3.6579150162006453,         # infectious per initial daily case
-    beta=1.5350962671397375,       # transmission per step at full contact
-    sigma=0.41322677134459246,     # latent stage exit rate (2 stages)
-    gamma=0.11743375570402853,     # children's recovery rate per step
-    omega=0.010461329282921062,    # immunity waning rate per step
-    a_s=0.5148101673688945,        # cut of child-child contacts at full school closure
-    a_m=0.32131784924339,          # exposure reduction at full mask mandate
-    v_eff=0.864759195180686,       # fraction of vaccination_rate*S immunized per step
-    h=0.0024150853233538164,       # children's hospital referrals per onset
-    k_c=0.0748472247911112,        # referral pipeline rate per step
-    d=0.12943486530759446,         # hospital discharge rate per step
-    cap=155.1794119777753,         # hard bed cap
-    wl=0.07051289918672625,        # share of the bed waiting list that leaves per step
-    bh=0.08861573055525511,        # behavior: contact cut per unit hospital pressure H/cap
-    hs=0.12159472706239141,        # extra referrals per onset at full school closure (fraction)
-    hv=9.987537842493026e-11,      # extra referrals per onset at full vaccination (fraction)
-    fy=0.15177892296716303,        # children's population share
-    iy=0.12275112924470033,        # children's share of the initial infections
-    cyo=0.09143147380908338,       # child-adult contact (relative to child-child)
-    coo=0.7660395905955943,        # adult-adult contact
-    ho=54.89550585179882,          # adults' referral multiple of children's
-    go=4.4282349676564134,         # adults' recovery multiple of gamma
-    a_sh=0.09589374103857465,      # rise of child-adult/child-young-adult contacts at full school closure (home)
-    fe=0.12433796153516642,        # young adults' population share
-    ie=0.1263727738071894,         # young adults' share of the initial infections
-    rce=5.208199867772987,         # child-young-adult contact / child-adult contact
-    ree=2.8689280673463946,        # young-adult-young-adult contact / adult-adult contact
-    rae=0.035265225523906325,      # adult-young-adult contact / adult-adult contact
-    he=0.452138279264782,          # young adults' referral multiple of adults'
-    ge=0.20762459057616522,        # young adults' recovery multiple of adults'
+    rI=3.8599560225388427,         # infectious per initial daily case
+    beta=1.424509358664787,        # transmission per step at full contact
+    sigma=0.38983598524391905,     # latent stage exit rate (2 stages)
+    gamma=0.14601413548879555,     # children's recovery rate per step
+    omega=0.010395298991772243,    # immunity waning rate per step
+    a_s=0.5136865746841378,        # cut of child-child contacts at full school closure
+    a_m=0.342742181442312,         # exposure reduction at full mask mandate
+    v_eff=0.8810637293402017,      # fraction of vaccination_rate*S immunized per step
+    h=0.00021599373862627455,      # children's hospital referrals per onset
+    k_c=0.07432275499599611,       # referral pipeline rate per step
+    d=0.12854655896668482,         # hospital discharge rate per step
+    cap=155.19632408197262,        # hard bed cap
+    wl=0.06910935911724117,        # share of the bed waiting list that leaves per step
+    bh=0.0594069087589852,         # behavior: contact cut per unit hospital pressure H/cap
+    hs=0.08356155372502416,        # extra referrals per onset at full school closure (fraction)
+    hv=9.925904118669236e-11,      # extra referrals per onset at full vaccination (fraction)
+    fy=0.22293015581611192,        # children's population share
+    iy=0.12484548174450284,        # children's share of the initial infections
+    cyo=0.15051543468238562,       # child-adult contact (relative to child-child)
+    coo=0.8091517757684838,        # adult-adult contact
+    ho=638.4040368282123,          # adults' referral multiple of children's
+    go=3.3088706640209686,         # adults' recovery multiple of gamma
+    a_sh=0.23086914716822826,      # rise of child-adult/child-young-adult contacts at full school closure (home)
+    fe=0.09895140817400494,        # young adults' population share
+    ie=0.1541984031973921,         # young adults' share of the initial infections
+    rce=2.210124807800959,         # child-young-adult contact / child-adult contact
+    ree=3.7498447236031276,        # young-adult-young-adult contact / adult-adult contact
+    rae=0.00014567181018158731,    # adult-young-adult contact / adult-adult contact
+    he=0.6383296301977104,         # young adults' referral multiple of adults'
+    ge=0.17423778522428113,        # young adults' recovery multiple of adults'
+    wv=0.795446502591006,          # vaccine immunity waning, multiple of omega (0 = vaccinated join R)
 )
 
 
@@ -169,6 +173,7 @@ def _adv_epidemic_age(s, a, p):
         groups = (("y", lam_y, p["gamma"], hh), ("o", lam_o, go, hh * p["ho"]))
     ons = 0.0
     ref_in = 0.0
+    wv = p.get("wv", 0.0)
     for g, lam, gam, hg in groups:
         S, E1, E2, I, R = s["S" + g], s["E1" + g], s["E2" + g], s["I" + g], s["R" + g]
         inf = min(lam * S, S)
@@ -181,7 +186,15 @@ def _adv_epidemic_age(s, a, p):
         s["E1" + g] = E1 + inf - mv
         s["E2" + g] = E2 + mv - on
         s["I" + g] = I + on - rec
-        s["R" + g] = R + rec + vax - wane
+        if wv:
+            # Round P: the vaccinated keep their own immunity pool V (empty at reset), waning at wv x omega
+            V = s.get("V" + g, 0.0)
+            back = wv * p["omega"] * V
+            s["V" + g] = V + vax - back
+            s["S" + g] += back
+            s["R" + g] = R + rec - wane
+        else:
+            s["R" + g] = R + rec + vax - wane
         ons += on
         ref_in += hg * on
     ref = p["k_c"] * s["C"]
@@ -735,8 +748,11 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 # Hunting takes about a fixed count per step at high prey (hq*quota*Hs) with a refuge at low prey (Ph), so
 # harvest per animal peaks near 20 prey. Strong hunting (the 70-100% pulse box) pushes prey to a low floor
 # (~20 at 70%, ~7 at the full pulse) instead of a proportional decline.
-# Habitat protection acts through prey deaths (hm) and food renewal (hk), more in the north; the fitted
-# shelter from hunting (sh) is near zero.
+# Habitat protection acts through prey deaths (hm) and food renewal (hk), more in the north, and gives the
+# north's herd some shelter from hunting (sh_n ~0.08 at full protection; south ~0).
+# Round N2 (Sep 27, scratchpad N/wildlife2): same equations; the prey and harvest params were refit with a
+# score-shaped loss on both rulers (least squares on sqrt(1 - score) instead of soft-L1). It follows the
+# 70% hold's fall to its floor more closely (step 100: data 21.2, round O fit 26.4, this fit 24.5).
 # Corridor: animals leave both regions while it is open and wait in a transit pool that settles in the
 # other region at 1/tp, 1/td per step, so closing it still brings animals home. Predators in transit
 # die at tmd per step, so an open corridor keeps predators low for as long as it stays open
@@ -749,22 +765,22 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 # both regions see the same availability at rest (data: ~2.34 in both). Prey never depends on
 # predators, so only the predator params were refit; prey forecasts are byte-identical to round I.
 DEFAULTS["wildlife"] = dict(
-    b=0.6362021787044908,  # prey births per capita at low density (b - mu ~ 0.14/step: regrowth of a thin herd)
-    mu=0.4999951619736701,  # prey death rate (b and mu act as a pair; the fit sits at fit_i's cap mu <= 0.5)
-    hm_n=0.12324542792794141,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
-    hm_s=0.08572935810245555,  # same, south
-    rho_n=0.00413835708177833,  # food renewal, north
-    rho_s=0.0028053682271417554,  # food renewal, south
-    hk_n=0.9641170108811695,  # habitat boost to food renewal, north
-    hk_s=0.6700595767282168,  # habitat boost to food renewal, south
-    cons=0.00024005825752208948,  # food eaten per prey
-    F0=0.4420735707361732,  # food level at reset (fraction of capacity)
-    Pb=2034.0758036218936,  # prey crowding of births, per unit food
-    hq=0.07512128021510996,  # harvest per unit quota
-    Ph=20.32150445273686,  # harvest refuge: prey level where harvest halves per capita
-    Hs=20.075573650419937,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
-    sh_n=0.028176737367711778,  # shelter: hunting exposure 1 - sh*hab, north
-    sh_s=0.0007775495732185203,  # shelter, south
+    b=0.6314339294014693,  # prey births per capita at low density (b - mu ~ 0.14/step: regrowth of a thin herd)
+    mu=0.4999964464476404,  # prey death rate (b and mu act as a pair; the fit sits at fit_i's cap mu <= 0.5)
+    hm_n=0.12170042758321142,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
+    hm_s=0.0786720057732191,  # same, south
+    rho_n=0.006191348570474626,  # food renewal, north
+    rho_s=0.0031835661229532297,  # food renewal, south
+    hk_n=0.7180657850867458,  # habitat boost to food renewal, north
+    hk_s=0.9767747664309766,  # habitat boost to food renewal, south
+    cons=0.00025894784925536524,  # food eaten per prey
+    F0=0.5291883846470061,  # food level at reset (fraction of capacity)
+    Pb=1814.0846203200638,  # prey crowding of births, per unit food
+    hq=0.07127951593077667,  # harvest per unit quota
+    Ph=21.5540580541133,  # harvest refuge: prey level where harvest halves per capita
+    Hs=23.12789795643224,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
+    sh_n=0.07595628027487046,  # shelter: hunting exposure 1 - sh*hab, north
+    sh_s=0.006170926774620989,  # shelter, south
     a=0.09466493278312071,  # predator growth at full prey availability
     Hp=4.009381063116096e-12,  # prey level for half instant predator growth (fit ~0: no instant effect)
     m=3.942449579515096e-05,  # predator death rate
@@ -1039,6 +1055,16 @@ START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 # co x ((A + B)/No - 1) per step, incentive or not. Fitted co is steep, so this is a ceiling
 # near No: the base joint pulse levels off at A 201 + B 135 = 336 (round I kept climbing to
 # A 275 + B 237 = Nt on long pulse holds), and c1's seeding alone peaked at 344.
+# Round S2 (sane everywhere; both changes leave every paid log byte-identical, since the logs only
+# use incentive 0 or 2 and R never exceeds 0.0219 in them):
+# - Incentive-led members leave only when the incentive falls below the level they joined for
+#   (W = sum of joined-for levels u, uJ = W/J; drain lam*(1 - u/uJ)). K drained them at lam*(1-u) at
+#   every level, so any partial incentive leaked loyal members through J for ever (incentive 1 alone
+#   froze A/B at 46/36, below the 93/79 of no incentive). Promised cohorts carry the level promised
+#   when they entered the queue (V, U), conversions the current level. The reset cohort J0 (initial
+#   incentive-led members, level 1) is kept apart so its drain lam*(1-u) is not pooled with later joiners.
+# - Relationship memory R counts at most Rc, the largest value our runs reached. K let R keep
+#   growing on long bridge holds (tau_r 3,204), cutting seeded-recruit churn up to ~25x.
 DEFAULTS["social_contagion"] = dict(
     f=0.5115883429778939,         # share of initial members who are incentive-led (leave at reset)
     lam=0.07802907283601557,       # incentive-led drain per step at zero incentive
@@ -1066,6 +1092,7 @@ DEFAULTS["social_contagion"] = dict(
     Mb=79.33291466553214,                     # relationship-led audience B
     co=1.5425675743912917,                                  # overload churn per step per unit of members above No (round J)
     No=340.23902190699846,                                # members (A + B) the shared workforce can support (round J)
+    Rc=0.022,                                            # cap on relationship memory R (largest in our runs: 0.0219)
 )
 
 
@@ -1074,8 +1101,8 @@ def start_social(init, p):
     f = p["f"]
     s = dict(E=0.0, R=0.0)
     for c, A0 in (("a", Aa), ("b", Ab)):
-        s["K" + c] = (1 - f) * A0; s["J" + c] = f * A0
-        for k in ("L", "S", "D", "Q1", "Q2", "P1", "P2", "Q1p", "Q2p", "P1p", "P2p"):
+        s["K" + c] = (1 - f) * A0; s["J0" + c] = f * A0   # reset cohort, joined at level 1
+        for k in ("J", "W", "L", "S", "D", "Q1", "Q2", "P1", "P2", "Q1p", "Q2p", "P1p", "P2p", "V1", "V2", "U1", "U2"):
             s[k + c] = 0.0
     return s
 
@@ -1083,13 +1110,12 @@ def start_social(init, p):
 def adv_social(s, a, p):
     seed = _clip(_f(a, "seeding"), 0, 10); u = _clip(_f(a, "incentive"), 0, 2) / 2
     br = _clip(_f(a, "bridge_outreach"), 0, 1)
-    drain = p["lam"] * (1 - u)
     pr = p["phi"] * u
     s["E"] += (2 * u - s["E"]) / p["tau_e"]
     s["R"] += (br - s["R"]) / p["tau_r"]
-    keep = 1 / (1 + p["kr"] * s["R"])
+    keep = 1 / (1 + p["kr"] * min(s["R"], p["Rc"]))
     churnE = p["lamM"] * max(0.0, s["E"] - 2 * u)
-    A = {c: s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c] for c in ("a", "b")}
+    A = {c: s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c] + s["J0" + c] for c in ("a", "b")}
     roomS = max(0.0, 1 - (A["a"] + A["b"]) / p["Nt"])
     over = p["co"] * max(0.0, (A["a"] + A["b"]) / p["No"] - 1)
     g = seed * roomS * (1 + p["m"] * u)
@@ -1108,16 +1134,23 @@ def adv_social(s, a, p):
         s["Q1p" + c] += pr * ql - o1p; s["Q2p" + c] += o1p - o2p
         s["P1" + c] += qx - r1; s["P2" + c] += r1 - r2
         s["P1p" + c] += pr * qx - r1p; s["P2p" + c] += r1p - r2p
-        L = s["L" + c]; S = s["S" + c]; J = s["J" + c]; D = s["D" + c]
-        org = (p["a" + c] + p["b" + c] * (S + J)) * roomS * free * max(0.0, 1 - (s["K" + c] + L) / p["M" + c])
+        v1 = s["V1" + c] / tq; v2 = s["V2" + c] / tq; w1 = s["U1" + c] / tq2; w2 = s["U2" + c] / tq2
+        s["V1" + c] += u * pr * ql - v1; s["V2" + c] += v1 - v2        # promised level, local queue
+        s["U1" + c] += u * pr * qx - w1; s["U2" + c] += w1 - w2        # promised level, introductions
+        L = s["L" + c]; S = s["S" + c]; J = s["J" + c]; D = s["D" + c]; W = s["W" + c]; J0 = s["J0" + c]
+        uj = W / J if J > 1e-12 else 0.0
+        drain = p["lam"] * max(0.0, 1 - u / uj) if uj > 1e-12 else 0.0
+        org = (p["a" + c] + p["b" + c] * (S + J + J0)) * roomS * free * max(0.0, 1 - (s["K" + c] + L) / p["M" + c])
         convL = p["kc"] * u * L; convS = p["kc"] * u * S
-        leaveJ = min(J, (drain + over) * J); leaveS = min(S, (p["lr"] * (1 - u) * keep + churnE + over) * S)
+        leaveJ = min(J, (drain + over) * J); leaveJ0 = min(J0, (p["lam"] * (1 - u) + over) * J0); leaveS = min(S, (p["lr"] * (1 - u) * keep + churnE + over) * S)
         leaveL = min(L, (churnE + over) * L)
         s["J" + c] = max(0.0, J + o2p + r2p + convL + convS - leaveJ)
+        s["W" + c] = max(0.0, W + v2 + w2 + u * (convL + convS) - uj * leaveJ)
         s["S" + c] = max(0.0, S + (o2 - o2p) - convS - leaveS)
         s["L" + c] = max(0.0, L + (r2 - r2p) + org - convL - leaveL)
-        s["D" + c] = D + leaveJ + leaveS + leaveL - D / p["tau_d"]
-        out[obs] = s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c]
+        s["J0" + c] = J0 - leaveJ0
+        s["D" + c] = D + leaveJ + leaveJ0 + leaveS + leaveL - D / p["tau_d"]
+        out[obs] = s["K" + c] + s["L" + c] + s["S" + c] + s["J" + c] + s["J0" + c]
     return out
 
 
