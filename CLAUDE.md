@@ -290,6 +290,20 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   falling with hospital pressure, delayed vaccine protection, lagged behavior. Postponed
   gatherings helped 3 of 4 held-out logs but lost f1 (kept in scratch). Test zip
   `uploads/2026-09-27_N2_epidemic_age2.zip`. Beat 0.6870 and the refit's score.
+- Market after I's loss (Sep 27, agent + my re-check, scratch `market/`): I's param refit barely
+  matters (agreement with G 0.987 with the hold off); the dealer hold is the whole G-vs-I gap.
+  The hold's cost on hidden-like episodes: joint stress at rate 0.07-0.08 (0.029), rate alone
+  0.07-0.08 (0.016), joint 0.08-0.09 (0.014), the first 200 calm steps after a stress (0.026).
+  No paid run supports a hold under rate alone, at any rate but exactly 0.07, from calm (h1
+  started at reset), or depth staying low after a stress (every 100% run snaps back in ~15
+  steps). Working backwards from the public scores (G - E = G - I = +0.044): candidate truths
+  with no hold reproduce that ratio best (0.65-0.77); a narrow hold gives 0.13-0.48; an I-like
+  truth would have I beating G. So the hidden set rewards G's fast fall at rates 0.07-0.09.
+  G stays the default. Optional low-risk test `uploads/2026-09-27_N_market_c1.zip`: I's hold
+  only for joint stress below rate 0.0775, funding released when the rate returns to 0.
+  Identical to G on base/c1/f1, h1 0.516 -> 0.820 d1, agreement with G 0.981; expected -0.005
+  to +0.01. If it beats 0.6654 the hold is real near 0.07 with tax on; if not, drop every hold
+  and slow-fall idea.
 
 ## Next steps
 
