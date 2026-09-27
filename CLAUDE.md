@@ -258,6 +258,21 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   version (traffic B2, supply two-intake, reservoir V1P, ad / power / social K, epidemic E,
   market G, hospital / wildlife I), every folder proven identical in forecasts to its scored
   upload. Mean of best public 0.7594. This is the default final.
+- Round N (Sep 27, a parallel cloud session "Low-scoring models with remaining uploads", branch
+  `claude/nice-gates-tzqjih`; its v4 gives the same forecasts as ours on all ten). Public probes for
+  the weak systems, each re-checked here (crash gate x2, scores, 4,000-step scan):
+  epidemic age2: two age groups that barely mix (young 25%: R0 ~4; old 75%: R0 ~1.6, referred 5.2x
+  more per onset); all logs 0.938/0.855 -> 0.960/0.901, every log up; its leave-one-log-out f1
+  0.811 -> 0.841, h1 0.881 -> 0.909 (both unseen by E; not re-run here, its fit code stayed in its
+  scratch). epidemic refit: E's equations refit on all logs, 0.945/0.867, mostly in-sample.
+  social usat: incentive's effect saturates at 70% of max; identical on every paid run (incentive
+  only 0 or 2) but at the 70% pulse A 209 / B 133 vs K 158 / 94. hospital waitdn: wait falls at its
+  own rate; 0.922/0.875 -> 0.924/0.882. market c1: I's dealer hold only for joint stress below rate
+  0.0775, released when the rate returns to 0; identical to G on base/c1/f1, h1 0.674 -> 0.924.
+  One upload: `uploads/2026-09-27_N_five_probes.zip` = epidemic age2 + social usat + hospital waitdn
+  + market c1 + reservoir V2 (each folder proven identical to its source zip). Keep a system only if
+  it beats: epidemic 0.6870, social 0.5512, hospital 0.7328, market 0.6654, reservoir 0.8613.
+  If age2 loses, `uploads/2026-09-27_N_epidemic_refit.zip` is the next epidemic test.
 
 ## Next steps
 
