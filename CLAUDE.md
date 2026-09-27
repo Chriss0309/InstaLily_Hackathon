@@ -565,6 +565,17 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   through (rests too short to recover) and is back to 48.0 after 85 steps of rest (48.3 before
   the train); K settles at 47.0, so the persistent drop does not grow with repeated pulses and
   mostly fades. K scores best on both traffic runs (ramp 0.883/0.818, train 0.780/0.799).
+- Supply_chain after Round L (params-only refit agent, Sep 27, scratch `J/supply_chain_L`): no
+  params-only refit passes (best +0.003 std). Diagnosis: class 2 sells faster than K assumes
+  (~13.7/step at ~180 on the shelf vs K 12.0); at mix 0.5 class-1 arrivals (~15/step) are below
+  class-1 sales, so retail stays modest and falls. K's fixed 12-step class-2 delay is wrong (class
+  2 reaches the shelf ~step 8 at mix 0.5-0.65) and throughput depends on mix (36.5/step at 0.5 vs
+  32-35.5 at 0.71; K has one fixed cap of 32). Consequence: at the 70% hold K's retail settles at
+  ~1,180 (mix 0.5), ~2,400 (0.3), ~4,500 (0), far above the data's 371-and-falling. A structural
+  fix (two transport queues, class 2 on leftover capacity, faster class-2 shelf) is in progress.
+- Upload windows (kit/PROMPT.md): public and final uploads both stay open until Sep 30 12:00
+  Toronto and share the 3 slots per system per day. So public tests can continue Mon-Wed; keep
+  1 slot per system per day for a final update.
 
 
 ## More info please refer to the webpage: 
