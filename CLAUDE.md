@@ -279,6 +279,17 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   hospital `uploads/2026-09-27_N_hospital_waitdn.zip`: wait_time falls with its own rate
   (alpha_dn 0.057, rises at 0.039). Data at calm clears the wait at ~11%/step, I at 4.3%.
   All 0.922/0.875 -> 0.924/0.882; H 0.899 -> 0.894 d1. Stakes 0.952 (wait_time only). Beat 0.7328.
+- Epidemic age2 (Sep 27, agent + my re-check, scratch `epidemic/`): two age groups that barely
+  mix (young 25%: R0 ~4, fast wave; old 75%: R0 ~1.6, referred 5.2x more per onset). Masks,
+  behavior, vaccination, waning, pipeline and beds as in E. All logs 0.938/0.855 -> 0.960/0.900;
+  leave-one-log-out f1 0.811 -> 0.841, h1 0.881 -> 0.909 (both unseen by E), c1 0.850 (E's same
+  equations refit without c1: 0.704), base 0.819 (refit: 0.843). Settled levels are stable
+  across the leave-one-out fits (recovery 102-104 cases / 76-78 beds, data 103 / 79-80; E 101 /
+  73). School closure raises beds (84 vs E 75), vaccination lowers them more (60 vs 69). Stakes
+  0.840 vs E (hospital 0.761), 0.884 vs the refit. Ruled out by the fits: clinic availability
+  falling with hospital pressure, delayed vaccine protection, lagged behavior. Postponed
+  gatherings helped 3 of 4 held-out logs but lost f1 (kept in scratch). Test zip
+  `uploads/2026-09-27_N2_epidemic_age2.zip`. Beat 0.6870 and the refit's score.
 
 ## Next steps
 
