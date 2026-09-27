@@ -313,6 +313,31 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   reservoir 0.8613, social 0.5512, supply_chain 0.8120, traffic 0.8377, wildlife 0.7493; mean
   0.7654. `uploads/2026-09-27_final_candidate_v6.zip` = all ten at those versions, every folder
   proven identical in forecasts to its scored upload (`compare_zips.py`). This is the default final.
+- Round P (Sep 27 Toronto, 5 agents, scratch `N/<system>2`, every candidate re-checked here). Why
+  we stalled: our public-scored versions disagree hugely on hidden-like 4,000-step episodes
+  (scratch `N/synth.py`) yet score alike (social versions agree with K only 0.42-0.70, all public
+  0.50-0.55; market Bt differs from G ~8%, public unchanged). So the points are lost where our runs
+  never looked (levels between recovery and pulse, controls past the pulse value, holds longer
+  than ~400 steps), and/or the scorer's sigma is tighter than d1 (see Findings). Probe zip
+  `uploads/2026-09-27_P_five_probes.zip`; keep a system only if it beats its best public:
+  social A (> 0.5512): K with two artifacts fixed, identical on every paid run. Incentive-led
+  members now leave only when the incentive falls below the level they joined for (K drained them
+  forever at any partial incentive: incentive 1 alone froze membership at 46/36, below doing
+  nothing, and seeding 9 + incentive 1 gave less than seeding alone); relationship memory is
+  capped at the largest value any run reaches. Agreement with K 0.62 (the biggest bet so far); at
+  the 70% pulse it lands near usat (A 208 / B 134), which lost 0.004. market A (> 0.6655): Bt plus
+  dealer funding under joint stress only (dealers absorb falling moves while funding is free, tied
+  funding cuts depth, fast release when stress lifts, full at rate 0.07 fading to none at 0.1,
+  rate alone never opens it); identical on base/c1/f1, _h1 0.52 -> 0.85 d1; same family as I
+  (-0.044) and c1 (-0.001). hospital A (> 0.7333): params only; the follow-up program fills over
+  ~218 steps and diverts 45% of staff, so at the recovery action capacity (9.7) falls below
+  arrivals (11.46) and a long recovery hold climbs to ~200. Every log improves (all 0.924/0.882
+  -> 0.928/0.893), and it is the only hypothesis that reproduces the public scores of E, G, I and
+  waitdn (fingerprint level -0.013, pattern RMS 0.0024; stable-capacity versions imply 0.83-0.87).
+  wildlife A2 (> 0.7493): params only, refit with a score-shaped loss; all 0.927/0.829 ->
+  0.929/0.836, better on held-out logs. epidemic A_full (> 0.7452): vaccinated people get their
+  own immunity pool that wanes at 0.86x the natural rate (below 1 in all 12 CV folds); all
+  0.962/0.904 -> 0.964/0.908.
 
 ## Next steps
 
@@ -682,6 +707,24 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   Fitting: soft-L1 least squares pulls small-error params away from the score's optimum
   (hospital a0 0.05 vs the score's 0.10); a score-shaped residual sqrt(1 - 1/(1+|e|/sigma))
   matches it. Multi-threaded BLAS makes fits 5-10x slower on shared CPUs: OMP_NUM_THREADS=1.
+- Fingerprinting (round P, hospital agent's idea): treat a hypothesis as the truth, score every
+  public-scored version against it on hidden-like episodes, and compare with the versions' real
+  public scores. A hypothesis near the truth reproduces both the level and the gaps. Scratch
+  tools: `N/fingerprint.py`, `N/synth.py` (episodes), `N/zload.py` (loads any uploaded zip).
+  Hospital: only a sub-critical recovery state fits. Social and market: no hypothesis we have
+  fits (each implies a far wider spread and a much higher level than public), so the truth is far
+  from all our versions in some blind spot they share. Caveat: the episodes are our own guess.
+- Epidemic (round P agent): scoring our own logs with sigma = 0.3 x d1 reproduces all three
+  public epidemic scores (E 0.69 vs 0.687, age2 0.758 vs 0.743, age3 0.764 vs 0.745). The hidden
+  set may simply be scored tighter there (~12 cases, ~4.4 beds), so precision on familiar
+  behavior is worth more than d1 suggests.
+- Partial-level audit (round P): social K froze membership under any partial incentive (fixed in
+  social A). Hospital's shipped recovery state has only ~5% spare capacity: any small stress held
+  long (staffing 17, electives 2/step, diag 0.3 or 0.5) tips the queue to 140-280. Epidemic age3
+  is monotone and near-linear at partial levels, no R knife-edge (R0 4.24 at recovery, 2.84 at the
+  full pulse), but its long-hold hospital level rests on poorly pinned parameters. Wildlife has a
+  steep harvest drop between quota 6 and 7 set by poorly pinned numbers. Market Bt has no memory
+  (every hold settles within ~100-200 steps; depth follows the current tax only).
 
 
 ## More info please refer to the webpage: 
