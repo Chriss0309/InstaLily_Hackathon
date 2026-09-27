@@ -242,6 +242,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   30.2/31.1 (data 31.5/30.6, K 27.6/28.2). Test zip `uploads/2026-09-27_M_traffic_b2.zip`; keep
   only if it beats K's 0.8305. The persistent speed drop after pulses (data 2.35 after a 100-step
   pulse, ~1 after J and after four 30-step pulses) and a journey-time speed are still unmodeled.
+- Supply_chain two-intake test (Sep 27, scratch `J/supply_chain_L2/B`): K's fixed 12-step class-2
+  delay replaced by two intakes (class 1 served first on the shared transport, class 2 on what is
+  left, each with its own ceiling) and one shelf slope for both classes. Fails the ship rules
+  (_f1 -0.016/-0.027: class 2 now reaches the shelf ~step 5 of a full pulse instead of ~41; all
+  +0.001/+0.004) but predicts round L far better unseen (+0.021/+0.032) and bounds retail at the
+  70% hold with low mix (369-431 vs K's 1,184-4,519). A public test decides which regime the hidden
+  set weighs more: `uploads/2026-09-27_M_supply_twointake.zip`; keep only if it beats 0.8085.
+  Unmodeled in both: ~17-25 steps after every pulse ends, shipments burst to 50-62/step for 5-13
+  steps (150-650 goods onto the shelf; the brief's rework path?), and round L's faster flow with
+  earlier supplier refill says production or congestion depends on product mix.
 
 ## Next steps
 
