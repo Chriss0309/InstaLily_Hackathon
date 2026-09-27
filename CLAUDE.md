@@ -218,6 +218,13 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   (quality unchanged by design; level on J 0.796 -> 0.843 d1). Test zip:
   `uploads/2026-09-27_L_reservoir_v1p.zip` (not uploaded yet). If it beats 0.8447, splice
   `J/reservoir_v1p` into the repo; if not, reservoir stays on E.
+- Upload V1P (public, Sep 27 Toronto morning) scored reservoir 0.8613 (E 0.8447, K's B 0.8275):
+  the water fix is real and K's two-layer quality was what lost. Spliced into the repo. Best
+  public per system: ad_auction 0.881 (K), epidemic 0.687 (E), hospital 0.733 (I), market 0.665
+  (G), power_grid 0.817 (K), reservoir 0.861 (V1P), social 0.551 (K), supply_chain 0.809 (K),
+  traffic 0.831 (K), wildlife 0.749 (I); mean 0.758. `uploads/2026-09-27_final_candidate_v3.zip`
+  = all ten at those versions, every folder proven identical in forecasts to the upload it was
+  scored from. This is the default final.
 
 ## Next steps
 
@@ -266,7 +273,7 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
    tail measures recovery after a long 70% stress, which every recovery-history episode has.
    `foreach ($s in "traffic","power_grid","supply_chain","reservoir","ad_auction") { python collect_runs.py $s "file:schedules/j1.json#$s.long" --out "research\${s}_j1.json" }`
 
-9. Round L (proposed Sep 26, NOT run, needs Chris's OK): three runs aimed at the biggest guesses
+9. Done Sep 27 (approved and run by Chris, see Findings): Round L, three runs aimed at the biggest guesses
    the Round K hold scans found (`schedules/l1.json`, 600 steps, validated free):
    supply_chain.mix, 150 steps at the 70% settings but product_mix left at 0.5, then 45 at
    recovery (195, leaves 0): does class-2 stock pile up on the shelf? Retail at step 150:
@@ -537,6 +544,20 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   program so capacity at full follow-up fell just under arrivals: at the recovery action the
   queue climbed 23 -> 105 after step 400 (no data that long); freezing tP and phi fixes the
   drift but then std drops 0.008, so not shipped. Rule: always run the 4,000-step hold scan.
+- Round L collected Sep 27 (~19:06-19:08 Chris's time): all 3 runs complete and match
+  `schedules/l1.json`. Steps left: traffic 20, ad_auction 220, reservoir 120, social 40,
+  wildlife 13, every other system 0. Data vs predictions made before collecting:
+  supply_chain at the 70% settings with product_mix 0.5: retail peaks at ~417 (step 100) and
+  then FALLS to 371 at step 150 while the stress continues (K 446 -> 607, G 714 -> 797, K
+  without the e2 floor 470 -> 698); lower mix means less stock on the shelf (the mix-0.71 J run
+  peaked ~740), so class 2 sells faster than K assumes. Shipments 36 early, sagging to ~30 by
+  step 100 (all models flat 32). Score on this unseen run: K 0.797/0.661, G 0.658/0.504.
+  traffic ramp metering alone at toll 5: flows 12.0 / 11.9 (K 13.5 / 12.2, ct 0.74 gives 7.4),
+  so toll's demand effect is near K's ct 0.5; speeds 31.5 / 30.6 (K 27.6 / 28.2), ~3 higher
+  than K at that load. Train of four full pulses with 20-step rests: speed_a stays 12-16 all
+  through (rests too short to recover) and is back to 48.0 after 85 steps of rest (48.3 before
+  the train); K settles at 47.0, so the persistent drop does not grow with repeated pulses and
+  mostly fades. K scores best on both traffic runs (ramp 0.883/0.818, train 0.780/0.799).
 
 
 ## More info please refer to the webpage: 

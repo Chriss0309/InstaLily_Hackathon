@@ -716,7 +716,11 @@ START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife
 # ------------------------------------------------------------------ reservoir
 # Grey-box fit to research data, first look + round C (Sep 25). Seasonal river inflow (sinusoid in
 # steps since reset), water balance with a hard spillway cap (excess leaves as spill in outflow),
-# delivery min(request, c0 + c1*level, water available), loss e0 + e1*level.
+# delivery min(request, c0 + c1*sqrt(level), water available), loss e0 + e1*level.
+# Round L (Sep 27): outlet capacity grows with the square root of the level (orifice flow);
+# rounds F and J measured it at levels 276-921 and the old straight line was 0.5-0.7/step off.
+# Only the water params were refit on all four logs, season length P held at E's;
+# quality is E's, unchanged (round K's two-layer quality lost 0.017 on the public set).
 # Bank storage: the reservoir exchanges kx*(H - level) per step with an aquifer whose head H starts
 # at H0 on every reset and relaxes toward the level at rate kh. A falling level draws water in (a
 # share ro of it shows in the inflow reading), a rising level loses some. No irrigation return
@@ -725,11 +729,11 @@ START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife
 # memory m driven only by a joint push: u = excess of the mean 0..1 position (recovery -> pulse)
 # over th = 0.25, the most any one control alone can give.
 DEFAULTS["reservoir"] = dict(
-    A=11.279344763228828, B=2.2546514118561714, P=67.77337141928736, phi=0.015263764397348854,   # river = A + B*sin(2*pi*t/P + phi)
-    c0=9.082030387128691, c1=0.007593384533294581,   # delivery cap c0 + c1*level
-    e0=-0.19622625214888292, e1=0.0016530556531527793,   # loss per step e0 + e1*level
+    A=11.310874322656671, B=2.226342827288653, P=67.77337141928736, phi=0.014714559909245226,   # river = A + B*sin(2*pi*t/P + phi)
+    c0=4.5706691948280245, c1=0.39192784092047694,   # delivery cap c0 + c1*sqrt(level)
+    e0=-0.02596946367555613, e1=0.0012628727317216934,   # loss per step e0 + e1*level
     Lcap=941.0,   # spillway level (measured, held fixed in the fit)
-    kx=0.01604774298401246, kh=0.1382750495811783, H0=533.7342773766807, ro=0.6840276588459931,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
+    kx=0.005749673427361744, kh=0.0380311391315047, H0=435.6261086443233, ro=0.6455410394599697,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
     qc=0.9596712525080192, qa=0.09123982053881292, tq=4.660674394054027,   # calm quality, memory weight, start-up time constant
     g0=0.0013703030433965336, g=0.0035950058192401185, d=0.006089635459834917, th=0.25,   # memory: calm drive, stress drive, decay, drive shape
 )
@@ -749,7 +753,7 @@ def adv_reservoir(s, a, p):
     inflow = river + (p["ro"] * G if G > 0 else 0.0)
     wet = river + G
     loss = p["e0"] + p["e1"] * L
-    dlv = min(rel + irr, max(p["c0"] + p["c1"] * L, 0.0), max(L + wet - loss, 0.0))
+    dlv = min(rel + irr, max(p["c0"] + p["c1"] * math.sqrt(L), 0.0), max(L + wet - loss, 0.0))
     L = L + wet - dlv - loss
     spill = 0.0
     if L > p["Lcap"]:
