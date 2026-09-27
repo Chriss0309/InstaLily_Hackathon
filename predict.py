@@ -199,8 +199,18 @@ START["market"], ADVANCE["market"] = start_market, adv_market
 
 # ------------------------------------------------------------------ traffic
 # Round G (Sep 26): E's queue model plus a shared junction (scratchpad G/traffic, fit_g.py).
-# Round J (Sep 26): same equations, params refit on first look + round C + round F + round J (250 steps
-# at the 70% pulse, then 150 at recovery; scratchpad J/traffic, fit_A.py). Per route r in (a, b):
+# Round J (Sep 26): same equations, params refit on first look + round C + round F + round J.
+# Round L (Sep 27, scratchpad J/traffic_L, fit_B.py): three small changes to the SPEED equation only
+# (flows, queues and the junction are unchanged), params refit on all five logs incl. round L
+# (ramp 1 alone at toll 5; a train of four full pulses with 20-step rests):
+#   - moving vehicles (pipeline + crossing) weigh wm ~0.78 of a stopped one (queue, exit store): at
+#     light load (ramp run, no queue) speeds were ~3 above the old model.
+#   - once a route is empty (n <= ne) its speed relaxes at ae ~0.19/step; while vehicles remain it
+#     rises at only au ~0.06/step (falls still at alpha). Data: after every pulse the speed stays low
+#     while the queue drains (exiting vehicles waited long) and jumps when the last vehicle exits.
+#   - lane closure lowers route b's free speed by kvl * lane (b is the route lane closure slows,
+#     dl_b): in every pulse speed_b falls from its first step, before any queue forms.
+# Per route r in (a, b):
 #   arrivals  = lam_r * ramp * (1 - ct * toll/5)   ramp = admitted demand; recovery (ramp 0) = empty road
 #   pipeline  arrivals reach the approach queue after D_r + dl_r * max(0, lane - lz) - T steps (= free-flow
 #             time to first exit; round C: b exits 11 steps after demand at lane 0.325, 16 at 0.65)
@@ -210,18 +220,15 @@ START["market"], ADVANCE["market"] = start_market, adv_market
 #   junction  admitted vehicles cross for T steps, then wait in an exit store R_r that empties at
 #             X_r * lf_r per step (flow_r). Crossing + waiting vehicles of BOTH routes share Jtot of
 #             room; when it is full, admissions of both routes are scaled down (one route obstructs the
-#             other). Round F: after a signal reversal the old route keeps flowing ~5-10 steps, and the
-#             drained stock after a sig 0.85 pulse is 1,500 vs ~940 after sig 0.15. Room is checked
-#             before this step's departures, so a full junction admits in bursts (period ~6 flow pattern
-#             under heavy demand at lane 0); real flows are just as lumpy and smoothing it scored worse.
-#   speed     EMA (alpha) toward (vfree_r - M_r) / (1 + n_r / qref_r), n_r = Q_r + junction_r +
-#             max(w * pipeline now, pipeline kd steps ago): speeds fall on the first pulse step, but
-#             stay low ~5 steps after demand stops (round C). M_b = 0.
-#             The first speed reading's offset from free speed decays separately at alpha0 (~0.28/step
-#             in every run; E tied it to alpha).
-#   memory    M_a += g * Q_a / (Q_a + qref_a) * (Mmax - M_a), never decays.
-# Fixed, not fitted: D_a, D_b, dl_b, lz, kd, T, w, ct (toll's demand effect: no run has ramp > 0 at
-# toll > 2.5, so a fitted ct only moves an unobserved regime; kept at E's 0.5).
+#             other). Room is checked before this step's departures, so a full junction admits in
+#             bursts; real flows are just as lumpy and smoothing it scored worse.
+#   speed     EMA toward (vfree_r - M_r - [r = b] kvl * lane) / (1 + n_r / qref_r),
+#             n_r = Q_r + R_r + wm * (crossing_r + max(w * pipeline now, pipeline kd steps ago)).
+#             Rate: alpha when falling; au when rising with vehicles on the route; ae when rising on an
+#             empty route. The first speed reading's offset from free speed decays separately at alpha0.
+#   memory    M_a += g * Q_a / (Q_a + qref_a) * (Mmax - M_a), never decays (M_b = 0).
+# Fixed, not fitted: D_a, D_b, dl_a, dl_b, lz, kd, T, w, ne, ct (toll's demand effect, E's 0.5: freeing it
+# without the ramp run drifts to 0.72, which the ramp run's flows reject).
 # The initial flow reading is ignored: roads start empty.
 DEFAULTS["traffic"] = dict(
     D_a=11.0,
@@ -232,26 +239,31 @@ DEFAULTS["traffic"] = dict(
     kd=5.0,
     T=5.0,
     ct=0.5,
-    lam_a=27.02263109417189,
-    lam_b=24.365439918156284,
-    C_a=67.16894615915552,
-    C_b=29.37029654889871,
-    l_a=0.001522387918088238,
-    l_b=0.6127555410605433,
-    qmax_a=515.4252828714582,
-    qmax_b=138.21474865463236,
-    qref_a=190.52116304575256,
-    qref_b=183.69919863080182,
-    vfree_a=49.1715512266661,
-    vfree_b=48.7283718081734,
-    alpha=0.13974926702184665,
-    alpha0=0.29216846258712104,
-    g=0.6656356208115545,
-    Mmax=2.156616799149093,
+    lam_a=25.951006170012533,
+    lam_b=24.638563698405914,
+    C_a=63.140936555052036,
+    C_b=27.15455178657909,
+    l_a=0.002255841512863684,
+    l_b=0.5609969979963817,
+    qmax_a=498.985947644424,
+    qmax_b=123.12376931263735,
+    qref_a=179.56985299596553,
+    qref_b=182.99502971478046,
+    vfree_a=48.79272650480091,
+    vfree_b=48.951078523951104,
+    alpha=0.18329517985842053,
+    alpha0=0.31884081623168076,
+    g=0.9982102297937167,
+    Mmax=1.4527257262611528,
     X_a=66.77297083384761,
-    X_b=16.285982611881536,
-    Jtot=187.06334764173235,
+    X_b=15.167910549099524,
+    Jtot=180.24736375154436,
     w=1.0,
+    wm=0.7756124218881744,
+    kvl=5.370926203786259,
+    au=0.06032025531971441,
+    ae=0.18678031204926823,
+    ne=1.0,
 )
 
 _TRAFFIC_RING = 64
@@ -324,14 +336,18 @@ def adv_traffic(s, a, p):
         if hist:
             hist.append(f)
             f = max(p["w"] * _pos(s["F" + r]), hist.pop(0))
-        n = s["Q" + r] + _pos(s["S" + r]) + s["R" + r] + f
+        n = s["Q" + r] + s["R" + r] + p["wm"] * (_pos(s["S" + r]) + f)
         if r == "a":
             m = s["Qa"]
             s["M"] += p["g"] * m / (m + p["qref_a"]) * (p["Mmax"] - s["M"])
             vf = p["vfree_a"] - s["M"]
         else:
-            vf = p["vfree_b"]
-        s["V" + r] += p["alpha"] * (vf / (1 + n / p["qref_" + r]) - s["V" + r])
+            vf = p["vfree_b"] - p["kvl"] * lane
+        tgt = vf / (1 + n / p["qref_" + r])
+        al = p["alpha"]
+        if tgt > s["V" + r]:
+            al = p["ae"] if n <= p["ne"] else p["au"]
+        s["V" + r] += al * (tgt - s["V" + r])
         s["O" + r] *= 1 - p["alpha0"]
         out["flow_" + r] = served
         out["speed_" + r] = s["V" + r] + s["O" + r]
@@ -486,57 +502,57 @@ START["power_grid"], ADVANCE["power_grid"] = start_power_grid, adv_power_grid
 
 
 # ------------------------------------------------------------------ supply chain
-# Round J (scratchpad J/supply_chain), fitted to first look + round C + round F + round J.
-# Chain as in G: production (2-step delay) -> supplier stock (ceiling) -> orders withdraw
-# available stock -> dispatch queue (withdrawals stop when it is full) -> forward transport
+# Round L2 (scratchpad J/supply_chain_L2), fitted to first look + rounds C, F, J and L.
+# Chain as in K: production (2-step delay) -> supplier stock (ceiling) -> orders withdraw
+# available stock -> intakes (withdrawals stop when they hold q_max) -> forward transport
 # (3-step conveyor) -> receiving buffer -> receiving (rate x receiving_effort) -> retail -> sales.
 # Idle supplier stock turns unavailable; maintenance restores it. Transport shares drive service
 # with receiving and maintenance, and slows as machine heat builds at high receiving effort.
-# J change 1, two goods classes on the shelf, each sold separately: every run sells ~28/step in
-# its first 3 steps (both classes, fixed initial shares), ~15-18 once the shelf holds class 1
-# alone (pulse, 70% hold, recovery tails), ~28 again when class-2 goods arrive. Product mix sets
-# the class-1 share of each dispatch; classes keep their order through queue and buffer.
-# J change 2, class-2 goods spend 12 steps in their own intake before the shared queue, so under
-# congestion they reach the shelf late (~38 steps into the pulse, ~20 at the 70% hold, at once in
-# round C where nothing queues). The 70% hold's retail peak then eases toward class-1 balance.
-# J refit: production at partial maintenance (nm; only rounds C and J have 0 < maintenance < 1)
-# and the congestion ceiling q_max; the 70% hold refills supplier stock at ~step 90, not ~150.
-# e2 held at >= 0.0046 (the fit without round J): the data pin it only loosely, and near 0 it lets
-# class-2 stock grow without limit at low product mix with high throughput (no run goes there).
+# Two goods classes on the shelf, each sold separately (class 1 alone ~15.5/step, both ~28-30).
+# L2 change (replaces K's fixed 12-step class-2 delay): product mix splits each withdrawal between
+# two intakes. The primary intake (class 1) is served first on the shared forward transport, the
+# second intake (class 2) gets the leftover capacity, and each intake has its own ceiling: the
+# primary shares drive service with receiving and maintenance, the second shares cooling with
+# treatment (maintenance). Recovery tails pass ~25/step while both intakes hold goods and ~12-13
+# with one; round L (mix 0.5) passes 36.5 at the effort where round J (mix 0.71) passes 33.
+# Class-2 goods reach the shelf at once when the primary intake is light (round L, step 8) and
+# late when it is heavy (full pulse, ~40 steps).
 DEFAULTS["supply_chain"] = dict(
-    kp=32.26912568747066,     # production per step at production_effort 1, maintenance 0 (2-step delay)
-    dm=0.6611589768053079,    # share of production lost at full maintenance
-    nm=2.1567601323545484,    # maintenance exponent on that loss (loss = dm * maintenance**nm)
-    s_cap=361.8,              # supplier stock ceiling (calm reading)
-    s_res=0.0,                # supplier stock that orders cannot withdraw
-    ag=0.358267119804474,     # share of available supplier stock that turns unavailable per step while it sits
-    tr=0.48422747215464135,   # share of unavailable stock made available again per step per unit maintenance
-    q_max=714.5843597563409,  # dispatched goods not yet transported where new withdrawals stop (congestion)
-    trans=55.75717518194261,  # forward transport per step at zero receiving effort, maintenance and heat (3-step conveyor)
-    b_max=192.43913634684716, # receiving buffer size where transport stops
-    kr=51.51447025719483,     # receiving per step per unit receiving_effort
-    dr=0.3558915209717783,    # share of receiving taken by full maintenance (shared drive service)
-    d1=14.721648553383538,    # class-1 retail sales per step at an empty shelf
-    e1=0.009023432268020146,   # extra class-1 sales per step per unit of class-1 shelf stock
-    d2=11.190944989045953,    # class-2 retail sales per step at an empty shelf
-    e2=0.004600018015166459, # extra class-2 sales per step per unit of class-2 shelf stock
-    f2=0.4972468764725786,     # class-2 share of the initial retail stock
-    n2=12.0,                  # steps class-2 goods spend in their own intake before the shared queue
-    tre=0.30292847130594425,  # share of transport lost per unit receiving_effort (shared drive service)
-    tm=0.0896066244575284,    # share of transport lost per unit maintenance
-    h0=3876.91706028572,      # machine heat where transport halves; 0 = off
-    hc=0.0013096697217733662, # share of heat lost per step at maintenance 0
-    hm=0.21545111404719985,   # extra share of heat lost per step per unit maintenance
-    hk=3.351275846420814,     # heat input = transport x receiving_effort**hk (drive service load)
+    kp=31.999997248838675,      # production per step at production_effort 1, maintenance 0 (2-step delay)
+    dm=0.659368436344706,       # share of production lost at full maintenance
+    nm=2.3879835247220833,      # maintenance exponent on that loss (loss = dm * maintenance**nm)
+    s_cap=361.8,                   # supplier stock ceiling (calm reading)
+    s_res=0.0,                     # supplier stock that orders cannot withdraw
+    ag=0.3451726001811612,      # share of available supplier stock that turns unavailable per step while it sits
+    tr=0.4792112258660896,      # share of unavailable stock made available again per step per unit maintenance
+    q_max=696.6738430352287,       # goods held in the two intakes where new withdrawals stop (congestion)
+    trans=58.02401360678215,       # forward transport per step at zero receiving effort, maintenance and heat (3-step conveyor)
+    b_max=189.1755742641693,       # receiving buffer size where transport stops
+    kr=51.65439237061982,       # receiving per step per unit receiving_effort
+    dr=0.36013373376032265,     # share of receiving taken by full maintenance (shared drive service)
+    d1=14.14935158530428,       # class-1 retail sales per step at an empty shelf
+    e1=0.009502078180270893,    # extra sales per step per unit of shelf stock of the same class (both classes)
+    d2=11.23594640727093,       # class-2 retail sales per step at an empty shelf
+    f2=0.49778337606701084,     # class-2 share of the initial retail stock
+    c1=30.701564976490527,      # primary intake ceiling per step at zero receiving effort and maintenance
+    c1r=0.19820942464323454,     # share of that ceiling lost per unit receiving_effort (drive service)
+    c1m=0.19081995171738234,     # share of that ceiling lost per unit maintenance (drive service)
+    c2=15.776298036616645,      # second intake ceiling per step at maintenance 0
+    c2m=0.21852436790716173,     # share of that ceiling lost per unit maintenance (cooling shared with treatment)
+    tre=0.2897142353423435,      # share of transport lost per unit receiving_effort (shared drive service)
+    tm=0.09764497867248641,     # share of transport lost per unit maintenance
+    h0=3660.861697511984,       # machine heat where transport halves; 0 = off
+    hc=0.0028579131728510986,   # share of heat lost per step at maintenance 0
+    hm=0.17706939783874,        # extra share of heat lost per step per unit maintenance
+    hk=3.73816189009347,        # heat input = transport x receiving_effort**hk (drive service load)
 )
 
 
 def start_supply(init, p):
     s = _pos(_f(init, "inventory_supplier"))
     r = _pos(_f(init, "inventory_retail"))
-    n2 = int(round(_clip(p["n2"], 0.0, 50.0)))
     return dict(s=s, a=s, r1=r * (1.0 - p["f2"]), r2=r * p["f2"], pp=[0.0, 0.0],
-                q=[], qs=0.0, c2=[0.0] * n2, conv=[(0.0, 0.0)] * 3, b=[], bs=0.0, h=0.0)
+                q1=0.0, q2=0.0, conv=[(0.0, 0.0)] * 3, b=[], bs=0.0, h=0.0)
 
 
 def _take(fifo, amt):
@@ -570,28 +586,25 @@ def adv_supply(s, a, p):
         cap, res = cap - un, _pos(res - un)
     s["pp"].append(p["kp"] * pe * _pos(1.0 - p["dm"] * mt ** p["nm"]))
     av = min(av + s["pp"].pop(0), max(av, cap))
-    held = s["qs"] + sum(s["c2"])
-    w = min(oq, _pos(av - res), _pos(p["q_max"] - held))
+    w = min(oq, _pos(av - res), _pos(p["q_max"] - s["q1"] - s["q2"]))
     av -= w
     s["a"] = av
     s["s"] = av + un
-    # product mix sets the class-1 share of the dispatch; class 2 waits in its own intake first
-    w2 = w * (1.0 - mix)
-    if s["c2"]:
-        s["c2"].append(w2)
-        w2 = s["c2"].pop(0)
-        w = w - w * (1.0 - mix) + w2
-    if w > 0.0:
-        s["q"].append([w, w2])
-        s["qs"] += w
+    # product mix splits the withdrawal between the primary intake (class 1) and the second (class 2)
+    s["q1"] += w * mix
+    s["q2"] += w * (1.0 - mix)
     tcap = p["trans"] * _pos(1.0 - p["tre"] * re - p["tm"] * mt)
     if p["h0"] > 0.0:
         tcap /= 1.0 + (s["h"] / p["h0"]) ** 4
-    t = min(s["qs"], tcap, _pos(p["b_max"] - s["bs"]))
+    room = min(tcap, _pos(p["b_max"] - s["bs"]))
+    # the primary intake is served first; the second intake takes what transport is left
+    t1 = min(s["q1"], p["c1"] * _pos(1.0 - p["c1r"] * re - p["c1m"] * mt), room)
+    t2 = min(s["q2"], p["c2"] * _pos(1.0 - p["c2m"] * mt), room - t1)
+    s["q1"] = _pos(s["q1"] - t1)
+    s["q2"] = _pos(s["q2"] - t2)
+    t = t1 + t2
     # machine heat: builds with transport work x drive load, cools slowly, maintenance cools it faster
     s["h"] = _pos(s["h"] + t * re ** p["hk"] - (p["hc"] + p["hm"] * mt) * s["h"])
-    t2 = _take(s["q"], t)
-    s["qs"] = _pos(s["qs"] - t)
     s["conv"].append((t, t2))
     arr, arr2 = s["conv"].pop(0)
     if arr > 0.0:
@@ -604,7 +617,7 @@ def adv_supply(s, a, p):
     r1 = s["r1"] + recv - recv2
     r2 = s["r2"] + recv2
     s["r1"] = _pos(r1 - min(r1, p["d1"] + p["e1"] * s["r1"]))
-    s["r2"] = _pos(r2 - min(r2, p["d2"] + p["e2"] * s["r2"]))
+    s["r2"] = _pos(r2 - min(r2, p["d2"] + p["e1"] * s["r2"]))
     return {"shipments": recv, "inventory_supplier": s["s"], "inventory_retail": s["r1"] + s["r2"]}
 
 

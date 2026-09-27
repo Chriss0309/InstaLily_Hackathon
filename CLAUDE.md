@@ -252,6 +252,12 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   Unmodeled in both: ~17-25 steps after every pulse ends, shipments burst to 50-62/step for 5-13
   steps (150-650 goods onto the shelf; the brief's rework path?), and round L's faster flow with
   earlier supplier refill says production or congestion depends on product mix.
+- Uploads M (public, Sep 27 Toronto): traffic B2 0.8377 (K 0.8305) and supply_chain two-intake
+  0.8120 (K 0.8085); both spliced into the repo. Reservoir V2 not uploaded yet (reservoir 1 slot
+  left on Sep 27). `uploads/2026-09-27_final_candidate_v4.zip` = all ten at their best public
+  version (traffic B2, supply two-intake, reservoir V1P, ad / power / social K, epidemic E,
+  market G, hospital / wildlife I), every folder proven identical in forecasts to its scored
+  upload. Mean of best public 0.7594. This is the default final.
 
 ## Next steps
 
