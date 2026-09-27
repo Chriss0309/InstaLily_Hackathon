@@ -746,6 +746,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   full pulse), but its long-hold hospital level rests on poorly pinned parameters. Wildlife has a
   steep harvest drop between quota 6 and 7 set by poorly pinned numbers. Market Bt has no memory
   (every hold settles within ~100-200 steps; depth follows the current tax only).
+- Does a gain on our own logs predict the public change? (Sep 27, 30 past upload pairs, scratch
+  N/): only weakly. Correlation 0.27 at each system's tight sigma, 0.20 at d1; the sign matches
+  22-23 times of 30. It works for wildlife, epidemic, traffic, power_grid, supply_chain and ad
+  (gains carry over, usually smaller). It fails for market (I, c1, A: big gains on our logs, flat
+  or lost publicly), reservoir quality (K-B, V2), hospital A (+0.011 on our logs, -0.108 public)
+  and social (I: +0.10 on our logs, +0.003 public; A: identical on our logs, +0.0195 public). The
+  sigma that makes our own logs reproduce each current public score is 0.23-0.26 x d1 for social,
+  hospital and epidemic, 0.33 market, 0.45 power/reservoir, 0.54 wildlife, 0.70 ad/traffic, 1.2
+  supply: not one common scale, so it is not just a tighter scorer; the weak systems' hidden
+  episodes differ from our runs.
 
 
 ## More info please refer to the webpage: 
