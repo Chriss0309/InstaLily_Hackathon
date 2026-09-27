@@ -252,6 +252,30 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   Unmodeled in both: ~17-25 steps after every pulse ends, shipments burst to 50-62/step for 5-13
   steps (150-650 goods onto the shelf; the brief's rework path?), and round L's faster flow with
   earlier supplier refill says production or congestion depends on product mix.
+- Upload M (public, Sep 27 Toronto) scored: traffic B2 0.8377 (K 0.8305), supply_chain two-intake
+  0.8120 (K 0.8085). Both win; neither is spliced into the repo yet (the repo still builds K for
+  both). Reservoir V2 not uploaded yet. Slots left Sep 27: reservoir, supply, traffic 1; ad,
+  power, social 2; epidemic, hospital, market, wildlife 3.
+- Round N (Sep 27, this cloud session, scratch only): public uploads used as experiments for the
+  four weakest systems. Tools rebuilt in the scratchpad: the harness (both rulers), 4,000-step hold
+  scans, and "hidden-like" episodes (my guess at the four categories: stresses at 70-100% of the
+  pulse per control, holds of 20-2,000 steps). "Stakes" = how closely a candidate agrees with the
+  incumbent on those episodes (d1 score of one against the other; 1.0 = identical forecasts).
+  Market check of the tool: G vs I agree 0.896, G vs E 0.855; public G - I = G - E = +0.044.
+  Round N probes (each alone in its zip; keep only if it beats the listed score):
+  social `uploads/2026-09-27_N_social_usat.zip`: incentive's effect saturates at 70% of max
+  (u_eff = min(1, u/0.7)). Every paid run has incentive 0 or 2, so our scores are byte-identical,
+  but the hidden stresses use incentive 1.4-2.0, where K's linear (1 - u) drain makes
+  incentive-led members leave continuously (a 4,000-step hold at 1.4 settles A 49 / B 40, below
+  no-incentive's 93 / 79; at 2.0 it climbs to A 103 / B 237). Stakes 0.758, the largest found:
+  the public result says which side is right. Beat 0.5512.
+  epidemic `uploads/2026-09-27_N_epidemic_refit.zip`: E's equations refit on all four logs
+  (E never saw F or H). All 0.938/0.855 -> 0.945/0.867; H 0.881 -> 0.907 (E runs ~7 low on
+  hospital_load at the endemic level: data 80, E 73, refit 77). Leave-one-log-out: F +0.007,
+  H -0.001 (so mostly in-sample). Stakes 0.902, mostly hospital_load. Beat 0.6870.
+  hospital `uploads/2026-09-27_N_hospital_waitdn.zip`: wait_time falls with its own rate
+  (alpha_dn 0.057, rises at 0.039). Data at calm clears the wait at ~11%/step, I at 4.3%.
+  All 0.922/0.875 -> 0.924/0.882; H 0.899 -> 0.894 d1. Stakes 0.952 (wait_time only). Beat 0.7328.
 
 ## Next steps
 
