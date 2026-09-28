@@ -483,6 +483,13 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   Agent notes: route learning looks active (ramp-alone split drifts toward the faster route), so
   route learning + spillback fronts are the two active mechanisms; after a pulse ending with signal
   0.85 route b drains ~535 vehicles vs ~350 after other pulses (bigger approach queue than modeled).
+  Ad A (`uploads/2026-09-28_V_ad_a.zip`, optional, keep if > 0.8866): follow-up exposure converts
+  attention less well while targeting reaches past the core audience (x exp(-0.806 x max(0, breadth -
+  0.55)/0.225), 0.45x at 0.775), so narrowing after a broad phase gives the data's ~10-step
+  conversion bump (+0.3-0.4, c1 step 160, f1 run 1 step 80; brief: "broad introduction may change
+  the effect of later follow-up"). Only conversion params + gb refit at T, win/spend params kept. All
+  T +0.0041 (f1 +0.019, j1 -0.006); CV with win/spend held wins every fold by +0.003-0.004, all-free
+  CV loses f1; agreement 0.987 (settle levels unchanged). Expected ~+0.002.
 
 ## Next steps
 
