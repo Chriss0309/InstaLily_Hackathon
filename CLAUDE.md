@@ -412,6 +412,17 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   disagreeing with waitdn on synthetic episodes; calm and near-calm holds unchanged, h1 wait d1
   0.78 -> 0.88, all d1 +0.013; leave-one-log-out ~0 at T. Epidemic and market structures from the
   agents lost in fair CV and were not uploaded.
+  Wildlife (two separate probe zips, Monday slots allow both after the v8 final; keep the better if it
+  beats 0.7751): `uploads/2026-09-28_U_wildlife_nursery.zip` = nursery-limited recruitment (brief:
+  young animals compete for nursery food): each region also recruits bl*prey/(1 + prey/Pl) per step,
+  so a thin herd regrows fast (data 0.20/step per animal at 10-20 prey; repo 0.14) and it caps near
+  4.5/step; all params refit at T. Every log up (all T 0.774 -> 0.804, f1 +0.062); fair
+  leave-one-log-out at T beats the repo structure on every held-out log (mean 0.705 -> 0.756; the 70%
+  hold predicted from the other logs 0.69 -> 0.78); agreement 0.922, the biggest wildlife bet so far
+  (partial quota 6 alone: north prey 48 vs repo 64; quota 6 + corridor: 37 vs 58). Weaker than the
+  repo on the overshoot after a long crash (base step 290: data 200, repo 166, nursery 147).
+  `uploads/2026-09-28_U_wildlife_ens50.zip` = the average of the repo model and nursery (weight fixed
+  at 0.5 in advance): all T +0.0185, every log up, CV mean 0.735, agreement 0.955.
 
 ## Next steps
 
