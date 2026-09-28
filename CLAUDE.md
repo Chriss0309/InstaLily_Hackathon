@@ -459,6 +459,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   (mean +0.016, misses on c1, the only log moving school and masks apart); long holds within 0.2
   d1-sigma of A_full; agreement 0.923 d1. Its sibling V_BPs (every non-flat param refit) passes CV
   but implies R would have beaten A_full, which the public scores contradict: not uploaded.
+  Supply C (`uploads/2026-09-28_V_supply_c.zip`, an optional long shot for a spare slot, keep if >
+  0.8120): machine heat slows only the primary intake (brief: it shares drive service with receiving
+  and maintenance), not the shared transport, so class 2 keeps flowing in round C's late phase. All
+  T 0.812 -> 0.839 (f1 +0.066, j1 +0.052) but base -0.012 (class 2 never reaches the shelf in the
+  base pulse) and fair CV loses (mean 0.785 -> 0.776; base 0.932 -> 0.901, c1 0.732 -> 0.671);
+  agreement 0.883. Supply data notes (agent): every switch to recovery is followed 16-24 steps later by
+  a burst of ~53-57 shipments/step for 5-13 steps (250-677 goods) in base, f1 and j1 but not l1 (mix
+  0.5), so it is tied to class imbalance; after a pulse the data ships 1,156-1,724 goods before
+  running dry (model 710-920); production at low effort looks like ~25/step (model 16);
+  `lead_time_buy` (rush handling) does nothing in the model and never moved alone in our logs.
 
 ## Next steps
 
