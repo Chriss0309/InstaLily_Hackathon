@@ -433,6 +433,17 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   d1 / 0.697 T; biggest unconstrained difference: incentive-only holds (A at step 4,000 125-132 vs
   C 109-116). C's bridge behavior (introduced members stay, so a long bridge campaign leaves B near
   247; A gets no recruits at bridge 1.0) is not clearly silly: c1 shows no churn of introduced members.
+- Uploads U (public, Mon Sep 28 Toronto) scored: power_grid C 0.8418 (Q 0.8222, +0.0196), wildlife
+  0.7909 (Q 0.7751, +0.0158; the screen shows only the latest of nursery and ens50, uploaded in that
+  order, so 0.7909 is probably ens50), market S 0.6753 (0.6761), traffic T 0.8335 (0.8377),
+  hospital U2 0.7293 (0.7333), social Q2 0.5747 (0.5778). Power C is spliced into the repo
+  (predict.py block + models/power_grid.json); the repo's wildlife stays Q until the wildlife
+  winner is confirmed. The fair leave-one-log-out bar (beat the incumbent's own LOO on every
+  held-out log) picked both winners; social Q2 also passed it and still lost (social never
+  transfers). Plain T refits (market, traffic, hospital) lost. Final candidates, identical per
+  folder to their scored uploads (`compare_zips.py`): `uploads/2026-09-28_final_candidate_v9_ens50.zip`
+  and `uploads/2026-09-28_final_candidate_v9_nursery.zip` (v8 plus power C plus that wildlife).
+  Best public mean with power C and wildlife 0.7909: 0.7767.
 
 ## Next steps
 
