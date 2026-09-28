@@ -396,6 +396,22 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   move (at their optimum); traffic +0.014 T, hospital +0.045 T, epidemic +0.038 T, social +0.025 T
   in-sample, but those are the systems where in-sample gains have not carried over (see Findings).
   Chris uploads v8 in the Final tab when finals open (Toronto Mon 12:00).
+  The container restarted ~08:40 UTC and killed all six agents (~1 h in); work kept in scratch `U/`.
+  Probe zip `uploads/2026-09-28_U_four_probes.zip`; keep a system only if it beats its best public:
+  power_grid C (> 0.8222): two structural fixes. Remote delivery through the interconnector is
+  capped by a capacity that follows a fixed ~71-step daily cycle from reset (the implied renewables
+  swing 33 <-> 41 on the same clock in every run; the swing fades with a Gaussian taper over ~4,000
+  steps so a period error cannot grow), and conventional output is cut below its floor when
+  frequency runs 1 Hz high and supported when it runs 1 Hz low (surplus holds settle near 51.6-51.7
+  Hz whatever the surplus; price-0 dips bottom at 48.3-48.4). Every log up at T, d1 and std (all T
+  0.834 -> 0.882, frequency d1 0.78-0.87 -> 0.89-0.90); leave-one-log-out at T beats the incumbent's
+  own on every held-out log (mean 0.794 -> 0.858); agreement 0.942; gate 19 s for 40 episodes.
+  market S (> 0.6761): params refit at T = 0.33 x d1, all T +0.0027 (agreement 0.987, a tiny bet).
+  traffic T (> 0.8377): params refit at T = 0.70 x d1, all T +0.014 (traffic's Q refit had +0.0135
+  and scored -0.0003). hospital_queue U2 (> 0.7333): params refit at T with a penalty on
+  disagreeing with waitdn on synthetic episodes; calm and near-calm holds unchanged, h1 wait d1
+  0.78 -> 0.88, all d1 +0.013; leave-one-log-out ~0 at T. Epidemic and market structures from the
+  agents lost in fair CV and were not uploaded.
 
 ## Next steps
 
