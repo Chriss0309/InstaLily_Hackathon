@@ -469,6 +469,20 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   0.5), so it is tied to class imbalance; after a pulse the data ships 1,156-1,724 goods before
   running dry (model 710-920); production at low effort looks like ~25/step (model 16);
   `lead_time_buy` (rush handling) does nothing in the model and never moved alone in our logs.
+  Traffic JT (`uploads/2026-09-28_V_traffic_jt.zip`, keep if > 0.8377): speed only. Reported speed
+  now mixes in journey time (brief: "combines observed completed journey times with current stopped
+  and moving class mix"): FIFO batches from approach to exit give the trip time of the vehicles
+  finishing each step, target speed = (1 - wj) x count speed + wj x free speed x free trip / actual
+  trip (wj a 0.20, b 0.29); data: from the 70% to the full pulse speed_a drops 12.6 -> 6.5 while
+  speed_b stays ~16, which the count model had backwards. The persistent speed_a drop after heavy
+  traffic is a ratchet on the worst congestion seen (data 2.35 / 1.1 / 0.95 / 0 after base, j1, l1,
+  c1; model 2.27 / 1.18 / 0.56 / 0). All T 0.838 -> 0.860 (c1 +0.051, j1 +0.057, base +0.019; worst
+  log l1 -0.003); fair CV at T beats the incumbent on every held-out log (mean 0.812 -> 0.829);
+  agreement 0.921. Risk: ramp metering alone held ~1,000 steps drifts speed_b 30 -> 20 (route b's
+  fitted capacity 11.97/step sits just under its demand 12.06; data flat at 30.5 for 80 steps).
+  Agent notes: route learning looks active (ramp-alone split drifts toward the faster route), so
+  route learning + spillback fronts are the two active mechanisms; after a pulse ending with signal
+  0.85 route b drains ~535 vehicles vs ~350 after other pulses (bigger approach queue than modeled).
 
 ## Next steps
 
