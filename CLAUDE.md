@@ -449,6 +449,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   score is not visible from the latest-submission View. ens50's wildlife block + model.json are now
   spliced into the repo; the repo builds exactly `uploads/2026-09-28_final_candidate_v9_ens50.zip`
   (compare_zips: all ten same). That is the default final.
+- Round V (Mon Sep 28 evening UTC, agents on ad, supply, traffic, epidemic with the winning recipe,
+  scratch `V2/`). Epidemic V_BPsha (`uploads/2026-09-28_V_epidemic_bpsha.zip`, keep if > 0.7492):
+  two brief mechanisms, behavior (caution outlasts a lifted restriction, fading over ~5 steps) and
+  postponed gatherings (school closure builds a backlog capped at 100, released after reopening);
+  only those params, the hospital params and a_s refit at T, the contact/age structure stays at
+  A_full (round R's losing direction). All T 0.748 -> 0.778 (base +0.047, f1 +0.033, h1 +0.030, c1
+  +0.002; c1 d1 -0.002: hospital_load on c1 0.889 -> 0.855); fair CV at T +0.001/-0.008/+0.039/+0.032
+  (mean +0.016, misses on c1, the only log moving school and masks apart); long holds within 0.2
+  d1-sigma of A_full; agreement 0.923 d1. Its sibling V_BPs (every non-flat param refit) passes CV
+  but implies R would have beaten A_full, which the public scores contradict: not uploaded.
 
 ## Next steps
 
