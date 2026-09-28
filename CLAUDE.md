@@ -377,6 +377,19 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   from their own finite audience (B's size unidentified, set low at 50). Incentive-only 4,000-step
   hold B 128-148 (A: 236); all logs 0.936/0.803 -> 0.936/0.802, misses the per-log floor on f1
   (-0.009 d1) and base (-0.006 d1), c1 +0.010 d1.
+- Uploads Q (Sunday slots) and R (Monday slots) scored: wildlife Q 0.7751 (A2 0.7564, +0.0187),
+  market Q 0.6761 (Bt 0.6655, +0.0106), social C 0.5778 (A 0.5707, +0.0071), ad_auction Q 0.8866
+  (0.8811, +0.0055), power_grid Q 0.8222 (0.8169, +0.0053), traffic Q 0.8374 (B2 0.8377),
+  reservoir Q 0.8575 (V1P 0.8613), hospital H2 0.7285 (waitdn 0.7333), epidemic Q 0.7230 (A_full
+  0.7492, -0.026). The five winners are spliced into the repo. Lessons: score-shaped params-only
+  refits win for most systems (wildlife twice, market, ad, power) but lost for epidemic (it moved
+  the parameters the epidemic agent had flagged as poorly pinned) and reservoir (quality params,
+  the family that keeps losing). Hospital lost both ways (less headroom -0.108, more -0.005), so
+  waitdn's near-knife-edge is closest. Best public: ad_auction 0.8866, epidemic 0.7492, hospital
+  0.7333, market 0.6761, power_grid 0.8222, reservoir 0.8613, social 0.5778, supply_chain 0.8120,
+  traffic 0.8377, wildlife 0.7751; mean 0.7731. `uploads/2026-09-28_final_candidate_v8.zip` = all
+  ten at those versions, every folder proven identical in forecasts to its scored upload. This is
+  the default final.
 
 ## Next steps
 

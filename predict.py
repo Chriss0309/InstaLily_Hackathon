@@ -252,27 +252,27 @@ START["epidemic"], ADVANCE["epidemic"] = start_epidemic, adv_epidemic
 #   150 steps, where G's exponential recovery ran 5-6 too high); falls end abruptly.
 # Volume and depth as in G (they react to |price step|). a_tax_v stays tied to 2 * a_rate_v.
 DEFAULTS["market"] = dict(
-    p0=94.182592685267,  # calm price level (0 = take from initial)
-    v0=1.9299613518658163,  # calm volume level (0 = take from initial)
-    d0=91.05954368437139,  # calm depth level (0 = take from initial)
+    p0=94.2639439465028,  # calm price level (0 = take from initial)
+    v0=1.8118120504447137,  # calm volume level (0 = take from initial)
+    d0=90.9331848136592,  # calm depth level (0 = take from initial)
     a_rate_p=2.33,  # price target falls a_rate_p * interest_rate (fixed: rate plateau)
-    a_tax_v=1.6210974072811972,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
-    a_rate_v=0.8105487036405986,  # volume target falls a_rate_v * interest_rate
-    a_vol_d=-0.011981807873515833,  # depth target change per unit of volume above baseline
-    a_tax_d=10.790294478921561,  # depth target falls a_tax_d * tax
-    k_p=0.055698344868887084,  # commitment rate, target below pf (falling)
-    k_pu=0.05545682679982994,  # commitment rate, target above pf (recovering)
-    k_v=0.29103486962775266,  # volume relaxation rate
-    k_d=0.11784409200570035,  # depth relaxation rate
-    c_t1=1.107826297901977,  # tax slows commitment
+    a_tax_v=2.6650869584973875e-14,  # volume target falls a_tax_v * tax (tied: 2 * a_rate_v)
+    a_rate_v=1.3325434792486938e-14,  # volume target falls a_rate_v * interest_rate
+    a_vol_d=-0.01238178899951158,  # depth target change per unit of volume above baseline
+    a_tax_d=10.866945080911899,  # depth target falls a_tax_d * tax
+    k_p=0.04370581916535345,  # commitment rate, target below pf (falling)
+    k_pu=0.05639397597856573,  # commitment rate, target above pf (recovering)
+    k_v=0.30460017811806644,  # volume relaxation rate
+    k_d=0.12371825540325312,  # depth relaxation rate
+    c_t1=0.7377122147486225,  # tax slows commitment
     a_amp=0.289,  # tax deepens the committed price move (fixed: joint floor)
-    b_vp=1.4146386837107805,  # volume target rise per unit |price step|
-    b_dp=8.726107660843898,  # depth target drop per unit |price step|
-    k_a=0.08734084747324604,  # execution: velocity relaxation rate
-    k_g=0.06755362947416908,  # execution: desired velocity per unit gap to target
-    v_dn=0.7087699859633968,  # execution: speed cap falling (per step)
-    v_up=0.19086163086910218,  # execution: speed cap rising (per step)
-    c_t2=0.8737016160885702,  # tax slows the velocity relaxation
+    b_vp=1.3253510244336866,  # volume target rise per unit |price step|
+    b_dp=6.98809436745125,  # depth target drop per unit |price step|
+    k_a=0.07126959918342377,  # execution: velocity relaxation rate
+    k_g=0.07640052133747573,  # execution: desired velocity per unit gap to target
+    v_dn=157632811.71331704,  # execution: speed cap falling (per step)
+    v_up=0.1989862950514336,  # execution: speed cap rising (per step)
+    c_t2=0.7992031784654751,  # tax slows the velocity relaxation
 )
 
 
@@ -503,31 +503,31 @@ _PG_N = 480                 # cooling loads per class
 _PG_GOLD = 0.6180339887498949
 
 DEFAULTS["power_grid"] = dict(
-    s0=0.5997461081462461,        # thermostat band centre at price 0.8 (normalized temperature)
-    db=0.12309073296195919,       # thermostat deadband width
-    kap=0.05076375588023307,      # band shift per unit price above 0.8
-    tau0=123.63141517011486,      # thermal time constant, class 0 (steps)
-    tau1=95.4467759072381,        # thermal time constant, class 1 (steps)
-    h=0.3803191813288195,         # +/- spread of time constants within a class
-    W0=67.30766742065039,         # total power of class 0 cooling loads
-    W1=22.483453547704116,        # total power of class 1 cooling loads
-    B0=108.93430536399443,        # load at price 0.8 (base demand + running cooling loads)
-    e=0.13886019548554632,        # desired base-demand drop per unit price above 0.8 (fraction of B0)
-    rho=0.8342667685781021,       # base demand keeps this fraction of its gap to desired, per step
-    kf=0.013798400468984642,      # Hz per unit power imbalance per step
-    df=0.46910896332402163,       # frequency damping per step
-    g0=67.63170664806327,         # conventional dispatch setpoint without reserve
-    droop=3.050960083364232,      # conventional power per Hz below 50 (fast governor)
-    kg=0.11813579579628114,       # fast governor response per step
-    ks=0.017490331169999856,      # slow dispatch response per step
-    disp=0.3071785088986796,      # dispatch setpoint drop per unit delivered reserve
-    gmin=54.83456083365457,       # conventional output floor
+    s0=0.5996251677066499,        # thermostat band centre at price 0.8 (normalized temperature)
+    db=0.12864564134649045,       # thermostat deadband width
+    kap=0.05360397802948364,      # band shift per unit price above 0.8
+    tau0=118.49686963559388,      # thermal time constant, class 0 (steps)
+    tau1=89.51506117926884,        # thermal time constant, class 1 (steps)
+    h=0.37804779297695246,         # +/- spread of time constants within a class
+    W0=69.77631698846201,         # total power of class 0 cooling loads
+    W1=23.65905029942758,        # total power of class 1 cooling loads
+    B0=108.5884845460551,        # load at price 0.8 (base demand + running cooling loads)
+    e=0.13014354110783252,        # desired base-demand drop per unit price above 0.8 (fraction of B0)
+    rho=0.8722739991453731,       # base demand keeps this fraction of its gap to desired, per step
+    kf=0.015859071718438363,      # Hz per unit power imbalance per step
+    df=0.4690463323478548,       # frequency damping per step
+    g0=66.86688579099666,         # conventional dispatch setpoint without reserve
+    droop=5.934672760380125,      # conventional power per Hz below 50 (fast governor)
+    kg=0.17224707822118546,       # fast governor response per step
+    ks=0.026281829943114773,      # slow dispatch response per step
+    disp=0.4412443526407239,      # dispatch setpoint drop per unit delivered reserve
+    gmin=54.25863007150422,       # conventional output floor
     gmax=150.0,                   # conventional output ceiling (not binding in any run)
-    r0=11.115024965489186,        # local renewables
-    r1=26.814185778609957,        # remote renewables at interconnector 1
-    cq=0.00796327898964801,       # renewable curtailment per unit reserve
-    q0=67.2616135647811,          # reserve cap at interconnector 0 and charging 0
-    qa=28.567583145838718,        # extra reserve cap at interconnector 1 and charging 1
+    r0=12.323300399679525,        # local renewables
+    r1=25.746307951903123,        # remote renewables at interconnector 1
+    cq=0.008293633177041798,       # renewable curtailment per unit reserve
+    q0=73.51647963826478,          # reserve cap at interconnector 0 and charging 0
+    qa=12.305411517683403,        # extra reserve cap at interconnector 1 and charging 1
     kq=0.9999999980000012,        # reserve ramp per step
 )
 
@@ -765,39 +765,39 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 # both regions see the same availability at rest (data: ~2.34 in both). Prey never depends on
 # predators, so only the predator params were refit; prey forecasts are byte-identical to round I.
 DEFAULTS["wildlife"] = dict(
-    b=0.6314339294014693,  # prey births per capita at low density (b - mu ~ 0.14/step: regrowth of a thin herd)
-    mu=0.4999964464476404,  # prey death rate (b and mu act as a pair; the fit sits at fit_i's cap mu <= 0.5)
-    hm_n=0.12170042758321142,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
-    hm_s=0.0786720057732191,  # same, south
-    rho_n=0.006191348570474626,  # food renewal, north
-    rho_s=0.0031835661229532297,  # food renewal, south
-    hk_n=0.7180657850867458,  # habitat boost to food renewal, north
-    hk_s=0.9767747664309766,  # habitat boost to food renewal, south
-    cons=0.00025894784925536524,  # food eaten per prey
-    F0=0.5291883846470061,  # food level at reset (fraction of capacity)
-    Pb=1814.0846203200638,  # prey crowding of births, per unit food
-    hq=0.07127951593077667,  # harvest per unit quota
-    Ph=21.5540580541133,  # harvest refuge: prey level where harvest halves per capita
-    Hs=23.12789795643224,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
-    sh_n=0.07595628027487046,  # shelter: hunting exposure 1 - sh*hab, north
-    sh_s=0.006170926774620989,  # shelter, south
-    a=0.09466493278312071,  # predator growth at full prey availability
-    Hp=4.009381063116096e-12,  # prey level for half instant predator growth (fit ~0: no instant effect)
-    m=3.942449579515096e-05,  # predator death rate
-    k=0.040122635309429305,  # predator crowding
-    Dk=3.3724738403102057,  # predator level where crowding per predator halves
+    b=0.7294766278176692,  # prey births per capita at low density (b - mu ~ 0.14/step: regrowth of a thin herd)
+    mu=0.5997101528776486,  # prey death rate (b and mu act as a pair; the fit sits at fit_i's cap mu <= 0.5)
+    hm_n=0.09630090111237975,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
+    hm_s=0.0630968340108186,  # same, south
+    rho_n=0.007413867002893674,  # food renewal, north
+    rho_s=0.004714622054151965,  # food renewal, south
+    hk_n=0.8059362922382459,  # habitat boost to food renewal, north
+    hk_s=0.6479354600922098,  # habitat boost to food renewal, south
+    cons=0.0002606488762713983,  # food eaten per prey
+    F0=0.6441704570012133,  # food level at reset (fraction of capacity)
+    Pb=1880.899432056002,  # prey crowding of births, per unit food
+    hq=0.07427299189574167,  # harvest per unit quota
+    Ph=22.438642524744978,  # harvest refuge: prey level where harvest halves per capita
+    Hs=22.550274143510745,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
+    sh_n=0.0900527591350773,  # shelter: hunting exposure 1 - sh*hab, north
+    sh_s=0.03894624790863848,  # shelter, south
+    a=0.1507915465785566,  # predator growth at full prey availability
+    Hp=4.957097349564092e-25,  # prey level for half instant predator growth (fit ~0: no instant effect)
+    m=2.5731450461930544e-07,  # predator death rate
+    k=0.05482007996667771,  # predator crowding
+    Dk=2.5872009970087575,  # predator level where crowding per predator halves
     Hv=2.09556997964094e-08,  # prey level where half the predators are counted
-    ep_n=0.046769319563386876,  # prey leaving the north per step at full corridor access
-    ep_s=0.06084258159428294,  # prey leaving the south per step at full corridor access
-    ed_n=0.03332994962615676,  # predators leaving the north per step at full corridor access
-    ed_s=0.03492132141867677,  # predators leaving the south per step at full corridor access
-    tp=33.04544506024473,  # prey transit pool: 1/tp of it settles in the other region per step
-    td=17.980407994409184,  # predator transit pool: 1/td settles per step
-    tmd=0.01031754839781484,  # predators in transit that die per step
-    wq=0.5052065678128667,  # share of predator growth that follows lagged prey availability
-    Hq=499.9999992470716,  # prey level for half availability (fit at its 500 bound: ~linear in prey below 200)
-    tq=20.22728364902498,  # availability lag (steps)
-    hs=0.7819803451977867,  # south availability scale, Hq*hs: pinned to the rest prey ratio 94.69/121.09 so both regions rest at one predator level (data ~2.34)
+    ep_n=0.03968465401682415,  # prey leaving the north per step at full corridor access
+    ep_s=0.052081139026660464,  # prey leaving the south per step at full corridor access
+    ed_n=0.03456552449186181,  # predators leaving the north per step at full corridor access
+    ed_s=0.03543170281434499,  # predators leaving the south per step at full corridor access
+    tp=50.48437608792426,  # prey transit pool: 1/tp of it settles in the other region per step
+    td=14.213329109829985,  # predator transit pool: 1/td settles per step
+    tmd=0.011719400448103904,  # predators in transit that die per step
+    wq=0.6116204943015546,  # share of predator growth that follows lagged prey availability
+    Hq=1014.1555708197144,  # prey level for half availability (fit at its 500 bound: ~linear in prey below 200)
+    tq=21.42060163869312,  # availability lag (steps)
+    hs=0.8747214798849674,  # south availability scale, Hq*hs: pinned to the rest prey ratio 94.69/121.09 so both regions rest at one predator level (data ~2.34)
 )
 
 
@@ -938,28 +938,28 @@ START["reservoir"], ADVANCE["reservoir"] = start_reservoir, adv_reservoir
 AD_EDGES = [0.0, 0.55, 0.775, 1.0]
 AD_D = [AD_EDGES[i + 1] - AD_EDGES[i] for i in range(len(AD_EDGES) - 1)]
 DEFAULTS["ad_auction"] = dict(
-    wmax=0.6976841856757215,    # win_rate ceiling at high bid (fresh reach, rival pressure 1)
-    b0=4.196706126225343,       # bid scale of the win curve (scaled by local rival pressure K)
-    g=0.23506937881524861,      # win boost where reachable people are thin
-    vp=240.59025109200323,      # spend per unit reached-and-won at bid 1.5
-    pe=0.30106956762787446,     # price exponent in bid
-    kap=0.9568440530526832,     # pacing: win_rate x pace**kap (kap<1: bid shading, not pure throttling)
-    f=0.07985536088271657,      # reach lost per step per unit exposure
-    tauR=90.11929453188766,     # reach recovery time (steps)
-    a=1.1860742404258042,       # attention gained per unit impressions (x100)
-    k1=0.03879977863657136,     # follow-up: purchase starts per attention at exposure xr
-    k0=0.16803944679906646,     # spontaneous purchase starts per attention
+    wmax=0.736756410526294,    # win_rate ceiling at high bid (fresh reach, rival pressure 1)
+    b0=4.431511019678776,       # bid scale of the win curve (scaled by local rival pressure K)
+    g=0.12952145978742174,      # win boost where reachable people are thin
+    vp=268.5737285199129,      # spend per unit reached-and-won at bid 1.5
+    pe=0.2903965189256315,     # price exponent in bid
+    kap=0.9617868001401669,     # pacing: win_rate x pace**kap (kap<1: bid shading, not pure throttling)
+    f=0.12598873267866617,      # reach lost per step per unit exposure
+    tauR=101.26596170787253,     # reach recovery time (steps)
+    a=1.3786539345315605,       # attention gained per unit impressions (x100)
+    k1=0.030105411198300708,     # follow-up: purchase starts per attention at exposure xr
+    k0=0.16021319116194596,     # spontaneous purchase starts per attention
     xr=0.26,                    # reference exposure for k1 (fixed)
-    k2=0.0964909558652435,      # pending -> completed rate
-    F=10.388282856804741,       # fulfilment capacity (core purchases per step)
-    W1=7.071413158784073,       # fulfilment work per purchase outside the core audience (core = 1)
-    v=0.0019641043057240797,    # converted customers made unavailable per conversion (per unit breadth)
-    tauV=22.06587768896608,     # time for converted customers to return (steps)
-    cq=2.9219323419764,         # conversion propensity falls as exp(-cq*x) across the audience
-    phi=0.31923921522105014,    # price rises with local rival pressure K**phi
-    rho=0.37102537507148814,    # rival capital pulled toward where we bid (conserved pool)
-    tauK=26.133068834258516,    # rival capital relocation time (steps)
-    mu=0.5963098102001345,      # rival capital pulled toward reachable people
+    k2=0.10240168856061384,      # pending -> completed rate
+    F=10.784378455288287,       # fulfilment capacity (core purchases per step)
+    W1=9.075642341163254,       # fulfilment work per purchase outside the core audience (core = 1)
+    v=0.001443126418027051,    # converted customers made unavailable per conversion (per unit breadth)
+    tauV=21.0133253310607,     # time for converted customers to return (steps)
+    cq=3.179332372045706,         # conversion propensity falls as exp(-cq*x) across the audience
+    phi=9.134644098808765e-14,    # price rises with local rival pressure K**phi
+    rho=0.2697502745728825,    # rival capital pulled toward where we bid (conserved pool)
+    tauK=23.936973288574897,    # rival capital relocation time (steps)
+    mu=0.5841516336943764,      # rival capital pulled toward reachable people
 )
 
 
@@ -1065,6 +1065,14 @@ START["ad_auction"], ADVANCE["ad_auction"] = start_ad, adv_ad
 #   incentive-led members, level 1) is kept apart so its drain lam*(1-u) is not pooled with later joiners.
 # - Relationship memory R counts at most Rc, the largest value our runs reached. K let R keep
 #   growing on long bridge holds (tau_r 3,204), cutting seeded-recruit churn up to ~25x.
+# Round C: loyal members who convert to incentive-led (Jc, a part of J that drains at J's rate)
+# still belong to the relationship-led audience, so organic room is 1 - (K + L + Jc)/M. Before,
+# conversion freed room and organic growth refilled L for ever under any incentive (B -> ~236).
+# The incentive-led audience is its own finite pool instead: the incentive recruits it directly
+# into J at ki * u * (a + b*(S + J + J0)) * (1 - Jd/I) (organic growth's rate and crowding, same
+# workforce and community factors); those recruits (Jd, part of J, drain at J's rate) fill at most
+# I per community (fit: A ~16; B's size is not identified by our runs, 30..1,000 score the same, so
+# 50). Under a long incentive alone membership settles near M + I instead of drifting to the overload ceiling.
 DEFAULTS["social_contagion"] = dict(
     f=0.5115883429778939,         # share of initial members who are incentive-led (leave at reset)
     lam=0.07802907283601557,       # incentive-led drain per step at zero incentive
@@ -1073,11 +1081,11 @@ DEFAULTS["social_contagion"] = dict(
     sa=1.4080054258024688,         # A queue entries per unit seeding (times 1 - bridge)
     sb=0.32362953490601726,       # B queue entries per unit seeding (bridge share goes via introductions)
     Nt=1059.6505720129899,         # shared onboarding capacity (A + B members)
-    aa=0.9534459880045454,        # organic growth A per step (times room)
-    ab=0.6543247756090418,       # organic growth B per step (times room)
+    aa=0.9468121526062758,        # organic growth A per step (times room)
+    ab=0.6523086071989075,       # organic growth B per step (times room)
     ba=-0.011191491090078892,     # organic growth per seeded / incentive-led member A (crowding)
     bb=-7.881267527842448e-07,      # organic growth per seeded / incentive-led member B (crowding)
-    kc=0.07802913833631368,       # recruits converted to incentive-led per step at full incentive
+    kc=0.06522898223266112,       # recruits converted to incentive-led per step at full incentive
     lr=0.010641580595212169,      # seeded-recruit churn per step at zero incentive
     lamM=0.1376270736230053,      # recruit churn per step per unit of unmet incentive expectation
     tau_e=12.524193149468623,     # incentive expectation time constant (steps)
@@ -1093,6 +1101,9 @@ DEFAULTS["social_contagion"] = dict(
     co=1.5425675743912917,                                  # overload churn per step per unit of members above No (round J)
     No=340.23902190699846,                                # members (A + B) the shared workforce can support (round J)
     Rc=0.022,                                            # cap on relationship memory R (largest in our runs: 0.0219)
+    ki=0.31838392764584705,                                              # incentive recruitment rate, in units of organic growth a (round C2)
+    Ia=16.468625602382037,                                            # incentive-led audience A (round C2)
+    Ib=50.0,                                            # incentive-led audience B (round C2)
 )
 
 
@@ -1102,7 +1113,7 @@ def start_social(init, p):
     s = dict(E=0.0, R=0.0)
     for c, A0 in (("a", Aa), ("b", Ab)):
         s["K" + c] = (1 - f) * A0; s["J0" + c] = f * A0   # reset cohort, joined at level 1
-        for k in ("J", "W", "L", "S", "D", "Q1", "Q2", "P1", "P2", "Q1p", "Q2p", "P1p", "P2p", "V1", "V2", "U1", "U2"):
+        for k in ("J", "W", "Jc", "Jd", "L", "S", "D", "Q1", "Q2", "P1", "P2", "Q1p", "Q2p", "P1p", "P2p", "V1", "V2", "U1", "U2"):
             s[k + c] = 0.0
     return s
 
@@ -1137,15 +1148,18 @@ def adv_social(s, a, p):
         v1 = s["V1" + c] / tq; v2 = s["V2" + c] / tq; w1 = s["U1" + c] / tq2; w2 = s["U2" + c] / tq2
         s["V1" + c] += u * pr * ql - v1; s["V2" + c] += v1 - v2        # promised level, local queue
         s["U1" + c] += u * pr * qx - w1; s["U2" + c] += w1 - w2        # promised level, introductions
-        L = s["L" + c]; S = s["S" + c]; J = s["J" + c]; D = s["D" + c]; W = s["W" + c]; J0 = s["J0" + c]
+        L = s["L" + c]; S = s["S" + c]; J = s["J" + c]; D = s["D" + c]; W = s["W" + c]; J0 = s["J0" + c]; Jc = s["Jc" + c]; Jd = s["Jd" + c]
         uj = W / J if J > 1e-12 else 0.0
         drain = p["lam"] * max(0.0, 1 - u / uj) if uj > 1e-12 else 0.0
-        org = (p["a" + c] + p["b" + c] * (S + J + J0)) * roomS * free * max(0.0, 1 - (s["K" + c] + L) / p["M" + c])
+        org = (p["a" + c] + p["b" + c] * (S + J + J0)) * roomS * free * max(0.0, 1 - (s["K" + c] + L + Jc) / p["M" + c])
+        rec = p["ki"] * u * max(0.0, p["a" + c] + p["b" + c] * (S + J + J0)) * max(0.0, 1 - Jd / p["I" + c]) * roomS * free
         convL = p["kc"] * u * L; convS = p["kc"] * u * S
         leaveJ = min(J, (drain + over) * J); leaveJ0 = min(J0, (p["lam"] * (1 - u) + over) * J0); leaveS = min(S, (p["lr"] * (1 - u) * keep + churnE + over) * S)
         leaveL = min(L, (churnE + over) * L)
-        s["J" + c] = max(0.0, J + o2p + r2p + convL + convS - leaveJ)
-        s["W" + c] = max(0.0, W + v2 + w2 + u * (convL + convS) - uj * leaveJ)
+        s["J" + c] = max(0.0, J + o2p + r2p + convL + convS + rec - leaveJ)
+        s["W" + c] = max(0.0, W + v2 + w2 + u * (convL + convS + rec) - uj * leaveJ)
+        s["Jc" + c] = min(s["J" + c], max(0.0, Jc + convL - (Jc / J * leaveJ if J > 1e-12 else 0.0)))
+        s["Jd" + c] = min(s["J" + c], max(0.0, Jd + rec - (Jd / J * leaveJ if J > 1e-12 else 0.0)))
         s["S" + c] = max(0.0, S + (o2 - o2p) - convS - leaveS)
         s["L" + c] = max(0.0, L + (r2 - r2p) + org - convL - leaveL)
         s["J0" + c] = J0 - leaveJ0
