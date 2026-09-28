@@ -794,44 +794,98 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 # then recover; after the corridor closes with prey high they climb to 2.8. The south scale hs makes
 # both regions see the same availability at rest (data: ~2.34 in both). Prey never depends on
 # predators, so only the predator params were refit; prey forecasts are byte-identical to round I.
+# Round U hedge (Sep 28, scratchpad U/wildlife/ens50): the forecast is the average of two structures run
+# side by side, the round-Q model (A) and the nursery model below (B), weight w = 0.5 fixed in advance. Why:
+# they disagree mainly where no run looks (partial quotas held long, 50% joint stress: B settles lower, since
+# its herd grows slower than the data at 60-90 prey while A grows faster), and at mid prey the data sit
+# between them. Averaging keeps about 60% of B's gain on every log and on held-out logs (leave-one-log-out)
+# while halving the change from A where we have no data.
+# Round U (Sep 28, scratchpad U/wildlife): nursery-limited recruitment. Young animals compete for nursery
+# food, so on top of the food-crowded births each region recruits bl*prey/(1 + prey/Pl) animals per step
+# (Beverton-Holt): proportional to a thin herd, capped near bl*Pl (~4.5 per step) once the nursery is
+# full. Data: right after every stress ends prey regrow at 0.24-0.29 per step from ~7-13 animals and the
+# rate halves by ~30 animals (every full pulse; hunting alone in the south), where food-crowded births
+# alone gave a flat ~0.16; hunting alone floors the south near 12 (data 11.7, round I 16). With the
+# nursery carrying a thin herd, food-crowded births settle near replacement (b - mu ~ 0.02). All params
+# refit at the tight ruler (sigma 0.54 x d1). Leave-one-log-out: every held-out log improves (the 70% hold
+# predicted from the other logs 0.61 -> 0.76).
 DEFAULTS["wildlife"] = dict(
-    b=0.7294766278176692,  # prey births per capita at low density (b - mu ~ 0.14/step: regrowth of a thin herd)
-    mu=0.5997101528776486,  # prey death rate (b and mu act as a pair; the fit sits at fit_i's cap mu <= 0.5)
-    hm_n=0.09630090111237975,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
-    hm_s=0.0630968340108186,  # same, south
-    rho_n=0.007413867002893674,  # food renewal, north
-    rho_s=0.004714622054151965,  # food renewal, south
-    hk_n=0.8059362922382459,  # habitat boost to food renewal, north
-    hk_s=0.6479354600922098,  # habitat boost to food renewal, south
-    cons=0.0002606488762713983,  # food eaten per prey
-    F0=0.6441704570012133,  # food level at reset (fraction of capacity)
-    Pb=1880.899432056002,  # prey crowding of births, per unit food
-    hq=0.07427299189574167,  # harvest per unit quota
-    Ph=22.438642524744978,  # harvest refuge: prey level where harvest halves per capita
-    Hs=22.550274143510745,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
-    sh_n=0.0900527591350773,  # shelter: hunting exposure 1 - sh*hab, north
-    sh_s=0.03894624790863848,  # shelter, south
-    a=0.1507915465785566,  # predator growth at full prey availability
-    Hp=4.957097349564092e-25,  # prey level for half instant predator growth (fit ~0: no instant effect)
-    m=2.5731450461930544e-07,  # predator death rate
-    k=0.05482007996667771,  # predator crowding
-    Dk=2.5872009970087575,  # predator level where crowding per predator halves
-    Hv=2.09556997964094e-08,  # prey level where half the predators are counted
-    ep_n=0.03968465401682415,  # prey leaving the north per step at full corridor access
-    ep_s=0.052081139026660464,  # prey leaving the south per step at full corridor access
-    ed_n=0.03456552449186181,  # predators leaving the north per step at full corridor access
-    ed_s=0.03543170281434499,  # predators leaving the south per step at full corridor access
-    tp=50.48437608792426,  # prey transit pool: 1/tp of it settles in the other region per step
-    td=14.213329109829985,  # predator transit pool: 1/td settles per step
-    tmd=0.011719400448103904,  # predators in transit that die per step
-    wq=0.6116204943015546,  # share of predator growth that follows lagged prey availability
-    Hq=1014.1555708197144,  # prey level for half availability (fit at its 500 bound: ~linear in prey below 200)
-    tq=21.42060163869312,  # availability lag (steps)
-    hs=0.8747214798849674,  # south availability scale, Hq*hs: pinned to the rest prey ratio 94.69/121.09 so both regions rest at one predator level (data ~2.34)
+    # sub-model A = the round-Q incumbent (bl = 0: no nursery recruits); sub-model B = the nursery model (n_*)
+    b=0.7294766278176692,
+    mu=0.5997101528776486,
+    hm_n=0.09630090111237975,
+    hm_s=0.0630968340108186,
+    rho_n=0.007413867002893674,
+    rho_s=0.004714622054151965,
+    hk_n=0.8059362922382459,
+    hk_s=0.6479354600922098,
+    cons=0.0002606488762713983,
+    F0=0.6441704570012133,
+    Pb=1880.899432056002,
+    hq=0.07427299189574167,
+    Ph=22.438642524744978,
+    Hs=22.550274143510745,
+    sh_n=0.0900527591350773,
+    sh_s=0.03894624790863848,
+    a=0.1507915465785566,
+    Hp=4.957097349564092e-25,
+    m=2.5731450461930544e-07,
+    k=0.05482007996667771,
+    Dk=2.5872009970087575,
+    Hv=2.09556997964094e-08,
+    ep_n=0.03968465401682415,
+    ep_s=0.052081139026660464,
+    ed_n=0.03456552449186181,
+    ed_s=0.03543170281434499,
+    tp=50.48437608792426,
+    td=14.213329109829985,
+    tmd=0.011719400448103904,
+    wq=0.6116204943015546,
+    Hq=1014.1555708197144,
+    tq=21.42060163869312,
+    hs=0.8747214798849674,
+    bl=0.0,  # A: no nursery recruits (A is then the round-Q model, byte for byte)
+    Pl=1.0,  # A: unused while bl = 0
+    n_b=0.7353312444239692,
+    n_mu=0.7110537231768431,
+    n_hm_n=0.0804021485918086,
+    n_hm_s=0.05566892161342491,
+    n_rho_n=0.0033611219746370797,
+    n_rho_s=0.001819651215897948,
+    n_hk_n=0.8136304632311931,
+    n_hk_s=0.8094969107261504,
+    n_cons=0.0005792272052422954,
+    n_F0=0.8261549577848949,
+    n_Pb=17164.890865655245,
+    n_hq=0.17733703907592466,
+    n_Ph=7.333343371379826,
+    n_Hs=7.476249710726517,
+    n_sh_n=0.22754018484308458,
+    n_sh_s=0.09616882519491582,
+    n_a=0.1752884148493682,
+    n_Hp=3.0556871163485175e-25,
+    n_m=0.00023821840332573238,
+    n_k=0.06846589676764991,
+    n_Dk=2.1814444175957335,
+    n_Hv=2.09556997964094e-08,
+    n_ep_n=0.031949832875242515,
+    n_ep_s=0.04099578686411413,
+    n_ed_n=0.035056608301469575,
+    n_ed_s=0.035901759987136156,
+    n_tp=24.13283983166949,
+    n_td=13.803770557040759,
+    n_tmd=0.010941332558310417,
+    n_wq=0.6126015365394264,
+    n_Hq=1076.0113201761642,
+    n_tq=21.44299253425201,
+    n_hs=0.8766793921043287,
+    n_bl=0.6633232013573336,  # B: nursery recruits per animal in a thin herd
+    n_Pl=6.863170769158863,  # B: herd size where recruits per animal halve (nursery full: ~bl*Pl recruits per step)
+    w=0.5,  # weight of the nursery model in the forecast
 )
 
 
-def start_wildlife(init, p):
+def _wl_start1(init, p):
     pn = _pos(_f(init, "prey_north")); ps = _pos(_f(init, "prey_south"))
     hv = p["Hv"]
     dn = _pos(_f(init, "predator_north")) * (pn + hv) / max(pn, 1e-6)
@@ -844,7 +898,7 @@ def start_wildlife(init, p):
                 wpn=0.0, wps=0.0, wdn=0.0, wds=0.0, qn=pn / (pn + hq), qs=ps / (ps + hq * p["hs"]))
 
 
-def adv_wildlife(s, a, p):
+def _wl_adv1(s, a, p):
     quota = _clip(_f(a, "hunting_quota", 0.0), 0.0, 8.0)
     hab = _clip(_f(a, "habitat_protection", 1.0), 0.0, 1.0)
     cor = _clip(_f(a, "corridor_access", 0.0), 0.0, 1.0)
@@ -855,7 +909,7 @@ def adv_wildlife(s, a, p):
         s["f" + reg] = min(max(food + rho * (1.0 - food) - eat, 0.0), 1.0)
         expo = _clip(1.0 - p["sh_" + reg] * hab, 0.0, 1.0)
         harvest = p["hq"] * quota * expo * prey * prey / (prey + p["Ph"]) / (1.0 + prey / p["Hs"])
-        birth = p["b"] / (1.0 + prey / (p["Pb"] * max(food, 1e-9)))
+        birth = p["b"] / (1.0 + prey / (p["Pb"] * max(food, 1e-9))) + p["bl"] / (1.0 + prey / max(p["Pl"], 1e-6))
         death = p["mu"] * (1.0 + p["hm_" + reg] * (1.0 - hab))
         v = prey + prey * (birth - death) - harvest
         s["p" + reg] = v if v > 1e-6 else 1e-6
@@ -883,6 +937,18 @@ def adv_wildlife(s, a, p):
     hv = p["Hv"]
     return {"prey_north": s["pn"], "predator_north": s["dn"] * s["pn"] / (s["pn"] + hv),
             "prey_south": s["ps"], "predator_south": s["ds"] * s["ps"] / (s["ps"] + hv)}
+
+
+def start_wildlife(init, p):
+    pa = {k: v for k, v in p.items() if not k.startswith("n_") and k != "w"}
+    pb = {k[2:]: v for k, v in p.items() if k.startswith("n_")}
+    return dict(A=_wl_start1(init, pa), B=_wl_start1(init, pb), pa=pa, pb=pb)
+
+
+def adv_wildlife(s, a, p):
+    oa = _wl_adv1(s["A"], a, s["pa"]); ob = _wl_adv1(s["B"], a, s["pb"])
+    w = _clip(p["w"], 0.0, 1.0)
+    return {k: (1.0 - w) * oa[k] + w * ob[k] for k in oa}
 
 
 START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife

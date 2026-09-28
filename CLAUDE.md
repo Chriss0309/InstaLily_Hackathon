@@ -444,6 +444,11 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   folder to their scored uploads (`compare_zips.py`): `uploads/2026-09-28_final_candidate_v9_ens50.zip`
   and `uploads/2026-09-28_final_candidate_v9_nursery.zip` (v8 plus power C plus that wildlife).
   Best public mean with power C and wildlife 0.7909: 0.7767.
+- Wildlife 0.7909 is ens50 (portal View JSON, submission 2910: size_bytes 32,109 vs our ens50 zip
+  32,145 and nursery 31,188; the portal re-packs, so sha256 never matches our files). Nursery's own
+  score is not visible from the latest-submission View. ens50's wildlife block + model.json are now
+  spliced into the repo; the repo builds exactly `uploads/2026-09-28_final_candidate_v9_ens50.zip`
+  (compare_zips: all ten same). That is the default final.
 
 ## Next steps
 
@@ -856,6 +861,11 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   (0.61-0.998) does not separate wins from losses either. Why: our logs end at 150-500 steps and
   90% of every hidden episode lies beyond step 400, so long-run behavior decides the weak systems
   and our data barely constrains it. Each brief names three history mechanisms (two active).
+- Portal submission View (Sep 28): `/submissions/<id>` returns JSON with `score` and `bands`:
+  `overall`, `id` and `extrapolation` (wildlife ens50: 0.7909 = 0.8021 id, 0.7872 extrapolation).
+  overall = 0.25 x id + 0.75 x extrapolation, so 10 of the 40 hidden episodes look like the
+  research-style schedules ("id", probably the recovery category at 70-100% of the pulse) and 30
+  are extrapolation. Also `size_bytes`, `sha256` (of the portal's re-packed zip), `created_at`.
 
 
 ## More info please refer to the webpage: 
