@@ -390,6 +390,12 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   traffic 0.8377, wildlife 0.7751; mean 0.7731. `uploads/2026-09-28_final_candidate_v8.zip` = all
   ten at those versions, every folder proven identical in forecasts to its scored upload. This is
   the default final.
+- Round U (Mon Sep 28 Toronto, from ~03:00; goal: a 0.80 mean = +0.27 total). Five agents (social,
+  market, hospital, epidemic, wildlife), brief in scratch `U/BRIEF.md`, candidates in `U/<system>/`.
+  Params-only refits at each system's tight scale (scratch `T/`, `S/`): power, supply, ad do not
+  move (at their optimum); traffic +0.014 T, hospital +0.045 T, epidemic +0.038 T, social +0.025 T
+  in-sample, but those are the systems where in-sample gains have not carried over (see Findings).
+  Chris uploads v8 in the Final tab when finals open (Toronto Mon 12:00).
 
 ## Next steps
 
@@ -787,6 +793,21 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   hospital and epidemic, 0.33 market, 0.45 power/reservoir, 0.54 wildlife, 0.70 ad/traffic, 1.2
   supply: not one common scale, so it is not just a tighter scorer; the weak systems' hidden
   episodes differ from our runs.
+- Where the points go (Sep 28, v8 on our logs at each system's tight scale T, scratch
+  `stats_tight.py`): the order/spacing log f1 is the weakest log for most systems (social 0.45,
+  hospital 0.58, wildlife 0.68, supply 0.70, traffic 0.76), and market's long 70% hold scores 0.40.
+  Weakest observable per system: social both (0.57/0.56), market price 0.51 and depth 0.60,
+  hospital wait 0.60, epidemic hospital_load 0.72, wildlife prey 0.71-0.74, supply retail 0.64,
+  power frequency 0.72, traffic speeds 0.73-0.77, reservoir quality 0.78, ad conversions 0.80.
+- Calibration of 18 past probes (Sep 28, scratch `calib_T.py`, `calib_lev.py`): in-sample T gain
+  predicts the public change for wildlife, ad, power and market params-only refits (e.g. wildlife
+  Q +0.017 T -> +0.019 public, market R +0.013 -> +0.011). It fails for epidemic (R refit: every
+  log >= +0.04 T, public -0.026), hospital (P-A +0.016 -> -0.108, H2 +0.010 -> -0.005), social
+  (A: 0 -> +0.0195), reservoir quality (+0.0085 -> -0.004), traffic refit (+0.0135 -> 0) and
+  market structures (A +0.062 -> -0.004). Agreement with the incumbent on synthetic episodes
+  (0.61-0.998) does not separate wins from losses either. Why: our logs end at 150-500 steps and
+  90% of every hidden episode lies beyond step 400, so long-run behavior decides the weak systems
+  and our data barely constrains it. Each brief names three history mechanisms (two active).
 
 
 ## More info please refer to the webpage: 
