@@ -423,6 +423,16 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   repo on the overshoot after a long crash (base step 290: data 200, repo 166, nursery 147).
   `uploads/2026-09-28_U_wildlife_ens50.zip` = the average of the repo model and nursery (weight fixed
   at 0.5 in advance): all T +0.0185, every log up, CV mean 0.735, agreement 0.955.
+  Social (`uploads/2026-09-28_U_social_q2.zip`, keep if > 0.5778): Q2 = C plus word of mouth
+  (relationship-led growth also spreads through existing relationship-led members, Bass imitation,
+  mostly in B) plus committed leavers (incentive-led members who decide to leave still go if the
+  incentive returns; C cancelled every pending departure at once, so pulse trains ratcheted up).
+  All T 0.566 -> 0.624 (h1 +0.129, base +0.060, f1 +0.039, c1 -0.002; d1 +0.024); fair
+  leave-one-log-out at T beats C's own structure on every held-out log (mean 0.390 -> 0.457); the
+  500-step recovery hold's fitted ceiling B 75.3 is matched (Q2 75.4, C 79.3). Agreement with C 0.884
+  d1 / 0.697 T; biggest unconstrained difference: incentive-only holds (A at step 4,000 125-132 vs
+  C 109-116). C's bridge behavior (introduced members stay, so a long bridge campaign leaves B near
+  247; A gets no recruits at bridge 1.0) is not clearly silly: c1 shows no churn of introduced members.
 
 ## Next steps
 
