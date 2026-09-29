@@ -508,6 +508,20 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   -0.010; keep if > 0.8121), `uploads/2026-09-29_W_social_blend.zip` (C + Q2, all T +0.034, worst
   -0.005; keep if > 0.5778). The nursery re-test is `uploads/2026-09-28_U_wildlife_nursery.zip`
   (keep if > 0.7909).
+- Reservoir A1 (round W agent, Tue Sep 29, scratch `W2/reservoir/`,
+  `uploads/2026-09-29_W_reservoir_a1.zip`, keep if > 0.8613): in every drawdown the inflow reading
+  runs above the river (~0 for the first ~25 steps from full, then a 0.25-0.45 plateau that lasts
+  all 200 steps of j1's 70% hold at level 275-390; back to 0 within ~4 steps of refilling). V1P's
+  bank storage let it fade to 0. Fix: one line, the aquifer head is also pulled toward a fixed
+  regional water table (Hr ~504, rate ~0.0073) (brief: groundwater may return water after a delay);
+  11 water params refit at T (ro -> 1.0, e1 -> 0), P and Lcap pinned, quality byte-identical. Every
+  log up at T/d1/std (all T 0.862 -> 0.874, j1 inflow d1 0.871 -> 0.947); fair CV at T beats V1P's
+  structure on every held-out log (mean 0.842 -> 0.857; j1 held out: inflow 0.756 -> 0.865);
+  agreement 0.979 d1 (inflow only moves). Agent notes: no sign of screen fouling (capacity residuals
+  within +/-0.03 from level 250 to 900), so the two active mechanisms look like groundwater return
+  plus layering; quality runs +0.005-0.012 above the model during j1's stress and +0.013-0.020 after
+  it, deep withdrawal alone +0.008, aeration off alone -0.008 (the model gives single controls no
+  quality effect; that family lost three times).
 
 ## Next steps
 
