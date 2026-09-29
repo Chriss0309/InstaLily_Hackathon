@@ -573,6 +573,18 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   0.7492, hospital 0.7333, market 0.6761, power 0.8550, reservoir 0.8630, social 0.5778, supply
   0.8121, traffic 0.8396, wildlife 0.7984; mean 0.7793. Final to upload:
   `uploads/2026-09-29_final_candidate_v11_LE.zip`.
+- Round X (Tue Sep 29 UTC, agents on power, traffic, wildlife for Toronto Wednesday's slots, scratch
+  `X2/`). Traffic (`uploads/2026-09-29_X_traffic_blend_jt2dv.zip`, keep if > 0.8396): the same
+  50/50 blend with JT replaced by JT2dv = JT plus diversion (brief: "waiting approach drivers may
+  divert"): 0.5%/step of route b's approach queue leaves (set, not fitted, so ramp metering alone
+  settles at the observed speed_b 30.5 instead of JT's slow slide to 20). Agreement with the
+  current blend 0.997 at T, in-sample -0.0006; slow drifts in 200 synthetic episodes 10 -> 7.
+  Expected ~0 to +0.002. B2 member byte-identical in its traffic block. Agent notes: the rounds'
+  CV starts each fold from the all-log fit and barely moves on jumpy traffic objectives, so it
+  overstates gains (cold-start CV: JT 0.8128 vs B2 0.8119, matching their public tie); a curve
+  through B2, JT and blend public scores peaks at weight ~0.52; unmodeled: speed_b at the full pulse
+  (models 12-13.6 vs data 16.5), after a signal reversal route a drains ~957 vehicles and speed_a
+  stays ~9 for ~25 steps, light-load tails exit 15-16 steps after ramp-off (models 11).
 
 ## Next steps
 
