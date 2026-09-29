@@ -600,6 +600,19 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   agreement 0.975. Still unmodeled: the overshoot height after long crashes (data 200/167 after the
   100-step pulse; every variant ~145/124) and the corridor-alone phase (data flat 110/76, then a slow
   rise to 139 over 57 steps after the corridor closes).
+  Power SS (`uploads/2026-09-29_X_power_ss.zip`, keep if > 0.8550): LE plus a storage reserve
+  (brief: reserves differ in power and duration and share a charging connection): while reserve is
+  requested above LE's steady cap the store adds up to charging x Pb until its energy Eb runs out;
+  with no extra request it refills at up to charging x Pc, a draw that lowers frequency but not the
+  load reading (Pb 14.8, Pc 13.2, Eb 151). Data: after the reserve-alone hold at charging 1 (c1 step
+  500) supply is short 17 -> 0 over ~15 steps (frequency 49.31, LE 49.97); after j1's 70% hold at
+  charging 0.3, 11 -> 0 over ~6 steps; no deficit after charging-0 holds. All T +0.0026 (no log
+  worse), CV mean +0.003 with f1 -0.004 (fit noise per the agent), agreement 0.9875 (the change sits
+  in the recovery / id band). S0 = storage params only (`uploads/2026-09-29_X_power_s0.zip`), all T
+  +0.0017, agreement 0.994. Agent note: the interconnector temperature looks inactive (its capacity
+  follows a fixed clock whatever the flows), so thermostatic loads + storage are the two active ones.
+  Wednesday probe zip: `uploads/2026-09-30_Y_power_ss_traffic_jt2dv.zip` (power SS + traffic
+  jt2dv blend, byte-identical to their single zips).
 
 ## Next steps
 
