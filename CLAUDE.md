@@ -522,6 +522,15 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   plus layering; quality runs +0.005-0.012 above the model during j1's stress and +0.013-0.020 after
   it, deep withdrawal alone +0.008, aeration off alone -0.008 (the model gives single controls no
   quality effect; that family lost three times).
+- Wildlife round W (scratch `W2/wildlife/`): nothing passed. nursery2 (nursery + per-animal ration
+  cap, steeper food crowding, a separate south food level at reset; 38 params at T) fixes the south
+  reset peak and gets closer on hunting-alone peaks, all T vs ens50 +0.016, but fair CV loses to
+  nursery (mean 0.754 -> 0.749). Data notes: after any stress the regrowth rate at a given herd size
+  is the same up to ~130-150 animals whatever the history; only the stopping point changes (~143
+  after 30-step pulses, ~200 after the 100-step pulse), then the herd falls ~3%/step (nursery
+  <= 0.9%); peaks come 26-27 steps after 30-step pulses (models 33-37). With food eaten in proportion
+  to herd x food, food eaten while regrowing cancels food stored during the crash, so no setting
+  reaches the 200 peak (five variants all stall near 155/134 after the 100-step pulse).
 
 ## Next steps
 
