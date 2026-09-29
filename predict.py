@@ -517,46 +517,47 @@ START["traffic"], ADVANCE["traffic"] = start_traffic, adv_traffic
 # Share = renewables / (renewables + G + reserve).
 # Load self-regulation (round W): the load reading scales by (1 + dl x) with x the last
 # frequency deviation (motor-type demand rises with frequency).
+# Curtailment (round W): renewables x exp(-cq Q) instead of (1 - cq Q).
 _PG_N = 480                 # cooling loads per class
 _PG_GOLD = 0.6180339887498949
 
 DEFAULTS["power_grid"] = dict(
-    s0=0.5996234639911682,        # thermostat band centre at price 0.8 (normalized temperature)
-    db=0.11869534437284575,       # thermostat deadband width
-    kap=0.0498163701290983,      # band shift per unit price above 0.8
-    tau0=128.8565568497631,      # thermal time constant, class 0 (steps)
-    tau1=97.1986650004628,        # thermal time constant, class 1 (steps)
-    h=0.3727547694100989,         # +/- spread of time constants within a class
-    W0=71.91819467932805,         # total power of class 0 cooling loads
-    W1=21.894631548468812,        # total power of class 1 cooling loads
-    B0=108.7723442768094,        # load at price 0.8 (base demand + running cooling loads)
-    e=0.14213633319292102,        # desired base-demand drop per unit price above 0.8 (fraction of B0)
-    rho=0.8580770628354315,       # base demand keeps this fraction of its gap to desired, per step
-    kf=0.014666332824485779,      # Hz per unit power imbalance per step
-    df=0.38190148156093456,       # frequency damping per step
-    g0=66.95175358929576,         # conventional dispatch setpoint without reserve
-    droop=6.994791428424258,      # conventional power per Hz below 50 (fast governor)
-    kg=0.13855914550033452,       # fast governor response per step
-    ks=0.02337522749619187,      # slow dispatch response per step
-    disp=0.33191675135485327,      # dispatch setpoint drop per unit delivered reserve
-    gmin=52.45530492809077,       # conventional output floor
+    s0=0.5998254885184074,        # thermostat band centre at price 0.8 (normalized temperature)
+    db=0.11856442325830652,       # thermostat deadband width
+    kap=0.04971056369017551,      # band shift per unit price above 0.8
+    tau0=129.00471978054654,      # thermal time constant, class 0 (steps)
+    tau1=97.33688258865651,        # thermal time constant, class 1 (steps)
+    h=0.37269132095808033,         # +/- spread of time constants within a class
+    W0=72.20042421931339,         # total power of class 0 cooling loads
+    W1=22.104362192789623,        # total power of class 1 cooling loads
+    B0=108.7325597161575,        # load at price 0.8 (base demand + running cooling loads)
+    e=0.1418736252113666,        # desired base-demand drop per unit price above 0.8 (fraction of B0)
+    rho=0.8606357053832063,       # base demand keeps this fraction of its gap to desired, per step
+    kf=0.014529049860784895,      # Hz per unit power imbalance per step
+    df=0.37777544840191013,       # frequency damping per step
+    g0=66.93997664981659,         # conventional dispatch setpoint without reserve
+    droop=6.930536285103167,      # conventional power per Hz below 50 (fast governor)
+    kg=0.14213066432900992,       # fast governor response per step
+    ks=0.023202451973523067,      # slow dispatch response per step
+    disp=0.33048317437288316,      # dispatch setpoint drop per unit delivered reserve
+    gmin=52.354516351308966,       # conventional output floor
     gmax=150.0,                   # conventional output ceiling (not binding in any run)
-    r0=10.513770226702999,        # local renewables
-    r1=28.41790348165465,        # remote renewables at interconnector 1
-    cq=0.007971695276271203,       # renewable curtailment per unit reserve
-    q0=70.63632704425422,          # reserve cap at interconnector 0 and charging 0
-    qa=24.498425201771514,        # extra reserve cap at interconnector 1 and charging 1
+    r0=10.85346308627327,        # local renewables
+    r1=28.076186580878417,        # remote renewables at interconnector 1
+    cq=0.012812613645331776,       # renewable curtailment rate per unit reserve (exponential)
+    q0=70.29220398149089,          # reserve cap at interconnector 0 and charging 0
+    qa=25.88108584258345,        # extra reserve cap at interconnector 1 and charging 1
     kq=0.9999999980000012,        # reserve ramp per step
-    P=70.89635036025952,                       # period of the connection-capacity cycle (steps)
-    ph=1.6112572949878827,                       # its phase offset (steps)
-    c0=27.23283574732848,                      # mean remote capacity
-    c1=4.693645405286475,                       # amplitude of the capacity cycle
+    P=70.90376505637029,                       # period of the connection-capacity cycle (steps)
+    ph=1.6242797809941638,                       # its phase offset (steps)
+    c0=26.891474157083795,                      # mean remote capacity
+    c1=4.690888347027588,                       # amplitude of the capacity cycle
     tc=4000.0,                    # Gaussian taper of the cycle amplitude (steps)
-    xo=0.9995903185852015,                      # over-frequency response threshold (Hz above 50)
-    do=18.891947854103435,                      # conventional output cut per Hz above 50+xo
-    xu=1.0989434377181373,                       # under-frequency threshold (Hz below 50)
-    du=0.4958527334570787,                      # extra frequency support per step per Hz below 50-xu
-    dl=0.020194007812187314,                     # load self-regulation: fractional load change per Hz of frequency deviation
+    xo=1.0095590434861577,                      # over-frequency response threshold (Hz above 50)
+    do=20.39440961746679,                      # conventional output cut per Hz above 50+xo
+    xu=1.0987101826139865,                       # under-frequency threshold (Hz below 50)
+    du=0.4903134888851095,                      # extra frequency support per step per Hz below 50-xu
+    dl=0.02058441207445757,                     # load self-regulation: fractional load change per Hz of frequency deviation
 )
 
 
@@ -637,7 +638,11 @@ def adv_power_grid(s, a, p):
     s["t"] = t + 1
     amp = p["c1"] * math.exp(-(t / p["tc"]) ** 2) if p["tc"] > 0 else 0.0
     cap = p["c0"] + amp * math.sin(6.283185307179586 * (t + p["ph"]) / p["P"])
-    ren = (p["r0"] + min(p["r1"] * ic, _pos(cap))) * _pos(1.0 - p["cq"] * s["Q"])
+    # round W: each unit of delivered reserve displaces a fixed fraction of the renewables still
+    # delivered, so curtailment is exp(-cq Q) (data: the three capped reserve holds, Q ~72 at
+    # interconnector 0.2, ~81 at 0.44 and ~97 at 1.0, all imply the same exponential rate ~0.013;
+    # a straight line 1 - cq Q curtails too much at interconnector 1 and too little at 0.2)
+    ren = (p["r0"] + min(p["r1"] * ic, _pos(cap))) * math.exp(-p["cq"] * s["Q"])
     s["gs"] += p["ks"] * (p["g0"] - p["disp"] * s["Q"] - s["gs"])
     s["gf"] += p["kg"] * (-p["droop"] * s["x"] - s["gf"])
     g = _clip(s["gs"] + s["gf"], p["gmin"], p["gmax"])

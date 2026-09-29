@@ -564,6 +564,15 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   traffic 0.8396, wildlife 0.7984; mean 0.7791. Finals: `uploads/2026-09-29_final_candidate_v11_L.zip`
   and `..._v11_LE.zip` (identical except power; every folder proven identical to its scored upload
   with compare_zips, traffic included). Use v11_LE only if power LE beats 0.8528 publicly.
+- Power LE (public, Tue Sep 29 Toronto, submission 3699) scored 0.8550 (L 0.8528, +0.0022). LE's
+  power block + model.json are spliced into the repo (compare_zips: identical to the scored upload).
+  Its View bands: overall 0.8550 = 0.25 x id 0.7549 + 0.75 x extrapolation 0.8883, so for power the
+  "id" episodes (probably the recovery-history category: repeated pulses at 70-100% of the pulse
+  per control, the only category tied to the reference actions) are the weak part, while for
+  wildlife ens50 id was the stronger band (0.802 vs 0.787). Best public: ad 0.8883, epidemic
+  0.7492, hospital 0.7333, market 0.6761, power 0.8550, reservoir 0.8630, social 0.5778, supply
+  0.8121, traffic 0.8396, wildlife 0.7984; mean 0.7793. Final to upload:
+  `uploads/2026-09-29_final_candidate_v11_LE.zip`.
 
 ## Next steps
 
