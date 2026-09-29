@@ -550,6 +550,20 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   exponential rate 0.013): all T 0.895, but fair CV misses base by 0.0015 (mean 0.882); at partial
   reserve it curtails more than C (untested). Probes: `uploads/2026-09-29_W_power_l.zip` and
   `uploads/2026-09-29_W_power_le.zip` (separate uploads; keep the better if > 0.8418).
+- Upload W (public, Tue Sep 29 Toronto, `uploads/2026-09-29_W_six_probes.zip`, the six single-system
+  probes merged byte for byte) scored: power L 0.8528 (C 0.8418, +0.0110; in-sample T +0.0096, so
+  this time the gain carried over in full), wildlife nursery 0.7984 (ens50 0.7909, Q 0.7751: the
+  gain was monotone in nursery's weight, so the physics is right, not a hedge), traffic blend B2+JT
+  0.8396 (B2 0.8377, JT 0.8373: the blend beat both, so they err in opposite directions on the
+  hidden set), reservoir A1 0.8630 (V1P 0.8613), social blend 0.5774 (C 0.5778, Q2 0.5747) and
+  supply blend 0.8116 (two-intake 0.8120, C 0.8121): those two blends landed at or below both
+  parents (shared bias). Spliced into the repo: power L, reservoir A1, wildlife nursery. Traffic's
+  final folder is the blend folder itself (predict.py + v_b2/v_jt members), taken byte for byte
+  from the scored zip; the repo's traffic block stays B2. Best public: ad 0.8883, epidemic 0.7492,
+  hospital 0.7333, market 0.6761, power 0.8528, reservoir 0.8630, social 0.5778, supply 0.8121,
+  traffic 0.8396, wildlife 0.7984; mean 0.7791. Finals: `uploads/2026-09-29_final_candidate_v11_L.zip`
+  and `..._v11_LE.zip` (identical except power; every folder proven identical to its scored upload
+  with compare_zips, traffic included). Use v11_LE only if power LE beats 0.8528 publicly.
 
 ## Next steps
 

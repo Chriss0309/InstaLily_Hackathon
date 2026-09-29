@@ -515,45 +515,48 @@ START["traffic"], ADVANCE["traffic"] = start_traffic, adv_traffic
 # bottom at 48.3-48.4 Hz, ~0.4 Hz above the linear model; c1's shallower dip to
 # 48.7 fits without it).
 # Share = renewables / (renewables + G + reserve).
+# Load self-regulation (round W): the load reading scales by (1 + dl x) with x the last
+# frequency deviation (motor-type demand rises with frequency).
 _PG_N = 480                 # cooling loads per class
 _PG_GOLD = 0.6180339887498949
 
 DEFAULTS["power_grid"] = dict(
-    s0=0.5966245460735431,        # thermostat band centre at price 0.8 (normalized temperature)
-    db=0.1251805640490618,       # thermostat deadband width
-    kap=0.05276986391054729,      # band shift per unit price above 0.8
-    tau0=122.27336614573636,      # thermal time constant, class 0 (steps)
-    tau1=92.18100918643532,        # thermal time constant, class 1 (steps)
-    h=0.373268277192554,         # +/- spread of time constants within a class
-    W0=68.87701377856126,         # total power of class 0 cooling loads
-    W1=21.984534421382342,        # total power of class 1 cooling loads
-    B0=108.99206313898496,        # load at price 0.8 (base demand + running cooling loads)
-    e=0.13864360917785867,        # desired base-demand drop per unit price above 0.8 (fraction of B0)
-    rho=0.8585981490718381,       # base demand keeps this fraction of its gap to desired, per step
-    kf=0.015217804839657735,      # Hz per unit power imbalance per step
-    df=0.41404501648482533,       # frequency damping per step
-    g0=67.27551998461708,         # conventional dispatch setpoint without reserve
-    droop=7.005275401799217,      # conventional power per Hz below 50 (fast governor)
-    kg=0.14471022662834573,       # fast governor response per step
-    ks=0.02300141249879158,      # slow dispatch response per step
-    disp=0.3241687036227237,      # dispatch setpoint drop per unit delivered reserve
-    gmin=52.97720027513509,       # conventional output floor
+    s0=0.5996234639911682,        # thermostat band centre at price 0.8 (normalized temperature)
+    db=0.11869534437284575,       # thermostat deadband width
+    kap=0.0498163701290983,      # band shift per unit price above 0.8
+    tau0=128.8565568497631,      # thermal time constant, class 0 (steps)
+    tau1=97.1986650004628,        # thermal time constant, class 1 (steps)
+    h=0.3727547694100989,         # +/- spread of time constants within a class
+    W0=71.91819467932805,         # total power of class 0 cooling loads
+    W1=21.894631548468812,        # total power of class 1 cooling loads
+    B0=108.7723442768094,        # load at price 0.8 (base demand + running cooling loads)
+    e=0.14213633319292102,        # desired base-demand drop per unit price above 0.8 (fraction of B0)
+    rho=0.8580770628354315,       # base demand keeps this fraction of its gap to desired, per step
+    kf=0.014666332824485779,      # Hz per unit power imbalance per step
+    df=0.38190148156093456,       # frequency damping per step
+    g0=66.95175358929576,         # conventional dispatch setpoint without reserve
+    droop=6.994791428424258,      # conventional power per Hz below 50 (fast governor)
+    kg=0.13855914550033452,       # fast governor response per step
+    ks=0.02337522749619187,      # slow dispatch response per step
+    disp=0.33191675135485327,      # dispatch setpoint drop per unit delivered reserve
+    gmin=52.45530492809077,       # conventional output floor
     gmax=150.0,                   # conventional output ceiling (not binding in any run)
-    r0=10.88319363630037,        # local renewables
-    r1=28.254665548307436,        # remote renewables at interconnector 1
-    cq=0.008166140914017128,       # renewable curtailment per unit reserve
-    q0=70.1574473966217,          # reserve cap at interconnector 0 and charging 0
-    qa=22.76735007608339,        # extra reserve cap at interconnector 1 and charging 1
+    r0=10.513770226702999,        # local renewables
+    r1=28.41790348165465,        # remote renewables at interconnector 1
+    cq=0.007971695276271203,       # renewable curtailment per unit reserve
+    q0=70.63632704425422,          # reserve cap at interconnector 0 and charging 0
+    qa=24.498425201771514,        # extra reserve cap at interconnector 1 and charging 1
     kq=0.9999999980000012,        # reserve ramp per step
-    P=70.88009703755496,                       # period of the connection-capacity cycle (steps)
-    ph=1.5403429819203107,                       # its phase offset (steps)
-    c0=27.032093983551253,                      # mean remote capacity
-    c1=4.619739469335623,                       # amplitude of the capacity cycle
+    P=70.89635036025952,                       # period of the connection-capacity cycle (steps)
+    ph=1.6112572949878827,                       # its phase offset (steps)
+    c0=27.23283574732848,                      # mean remote capacity
+    c1=4.693645405286475,                       # amplitude of the capacity cycle
     tc=4000.0,                    # Gaussian taper of the cycle amplitude (steps)
-    xo=1.0226629976490202,                      # over-frequency response threshold (Hz above 50)
-    do=17.76811353207334,                      # conventional output cut per Hz above 50+xo
-    xu=1.0388732620228236,                       # under-frequency threshold (Hz below 50)
-    du=0.47810419294904105,                      # extra frequency support per step per Hz below 50-xu
+    xo=0.9995903185852015,                      # over-frequency response threshold (Hz above 50)
+    do=18.891947854103435,                      # conventional output cut per Hz above 50+xo
+    xu=1.0989434377181373,                       # under-frequency threshold (Hz below 50)
+    du=0.4958527334570787,                      # extra frequency support per step per Hz below 50-xu
+    dl=0.020194007812187314,                     # load self-regulation: fractional load change per Hz of frequency deviation
 )
 
 
@@ -622,7 +625,11 @@ def adv_power_grid(s, a, p):
         on[k] = o
     # base demand lags its desired level
     s["d"] += (1.0 - p["rho"]) * (p["B0"] * (1 - p["e"] * (price - 0.8)) - s["base"] - s["d"])
-    load = s["d"] + tot
+    # load self-regulation (round W): consumption rises ~2% per Hz above 50 and falls below it
+    # (data: at fixed price the load reading runs above the thermostat model during every
+    # over-frequency hold, e.g. +3.4 on average in the reserve-alone hold at +1.8 Hz, and below it
+    # during every under-frequency hold, e.g. -2.5 at price 0 near -1.5 Hz)
+    load = (s["d"] + tot) * (1.0 + p["dl"] * s["x"])
     # reserve, renewables, conventional (slow dispatch + fast governor), frequency
     cap = _pos(p["q0"] + p["qa"] * 0.5 * (ic + ch))
     s["Q"] += p["kq"] * (min(res, cap) - s["Q"])
@@ -794,12 +801,6 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 # then recover; after the corridor closes with prey high they climb to 2.8. The south scale hs makes
 # both regions see the same availability at rest (data: ~2.34 in both). Prey never depends on
 # predators, so only the predator params were refit; prey forecasts are byte-identical to round I.
-# Round U hedge (Sep 28, scratchpad U/wildlife/ens50): the forecast is the average of two structures run
-# side by side, the round-Q model (A) and the nursery model below (B), weight w = 0.5 fixed in advance. Why:
-# they disagree mainly where no run looks (partial quotas held long, 50% joint stress: B settles lower, since
-# its herd grows slower than the data at 60-90 prey while A grows faster), and at mid prey the data sit
-# between them. Averaging keeps about 60% of B's gain on every log and on held-out logs (leave-one-log-out)
-# while halving the change from A where we have no data.
 # Round U (Sep 28, scratchpad U/wildlife): nursery-limited recruitment. Young animals compete for nursery
 # food, so on top of the food-crowded births each region recruits bl*prey/(1 + prey/Pl) animals per step
 # (Beverton-Holt): proportional to a thin herd, capped near bl*Pl (~4.5 per step) once the nursery is
@@ -810,82 +811,45 @@ START["supply_chain"], ADVANCE["supply_chain"] = start_supply, adv_supply
 # refit at the tight ruler (sigma 0.54 x d1). Leave-one-log-out: every held-out log improves (the 70% hold
 # predicted from the other logs 0.61 -> 0.76).
 DEFAULTS["wildlife"] = dict(
-    # sub-model A = the round-Q incumbent (bl = 0: no nursery recruits); sub-model B = the nursery model (n_*)
-    b=0.7294766278176692,
-    mu=0.5997101528776486,
-    hm_n=0.09630090111237975,
-    hm_s=0.0630968340108186,
-    rho_n=0.007413867002893674,
-    rho_s=0.004714622054151965,
-    hk_n=0.8059362922382459,
-    hk_s=0.6479354600922098,
-    cons=0.0002606488762713983,
-    F0=0.6441704570012133,
-    Pb=1880.899432056002,
-    hq=0.07427299189574167,
-    Ph=22.438642524744978,
-    Hs=22.550274143510745,
-    sh_n=0.0900527591350773,
-    sh_s=0.03894624790863848,
-    a=0.1507915465785566,
-    Hp=4.957097349564092e-25,
-    m=2.5731450461930544e-07,
-    k=0.05482007996667771,
-    Dk=2.5872009970087575,
-    Hv=2.09556997964094e-08,
-    ep_n=0.03968465401682415,
-    ep_s=0.052081139026660464,
-    ed_n=0.03456552449186181,
-    ed_s=0.03543170281434499,
-    tp=50.48437608792426,
-    td=14.213329109829985,
-    tmd=0.011719400448103904,
-    wq=0.6116204943015546,
-    Hq=1014.1555708197144,
-    tq=21.42060163869312,
-    hs=0.8747214798849674,
-    bl=0.0,  # A: no nursery recruits (A is then the round-Q model, byte for byte)
-    Pl=1.0,  # A: unused while bl = 0
-    n_b=0.7353312444239692,
-    n_mu=0.7110537231768431,
-    n_hm_n=0.0804021485918086,
-    n_hm_s=0.05566892161342491,
-    n_rho_n=0.0033611219746370797,
-    n_rho_s=0.001819651215897948,
-    n_hk_n=0.8136304632311931,
-    n_hk_s=0.8094969107261504,
-    n_cons=0.0005792272052422954,
-    n_F0=0.8261549577848949,
-    n_Pb=17164.890865655245,
-    n_hq=0.17733703907592466,
-    n_Ph=7.333343371379826,
-    n_Hs=7.476249710726517,
-    n_sh_n=0.22754018484308458,
-    n_sh_s=0.09616882519491582,
-    n_a=0.1752884148493682,
-    n_Hp=3.0556871163485175e-25,
-    n_m=0.00023821840332573238,
-    n_k=0.06846589676764991,
-    n_Dk=2.1814444175957335,
-    n_Hv=2.09556997964094e-08,
-    n_ep_n=0.031949832875242515,
-    n_ep_s=0.04099578686411413,
-    n_ed_n=0.035056608301469575,
-    n_ed_s=0.035901759987136156,
-    n_tp=24.13283983166949,
-    n_td=13.803770557040759,
-    n_tmd=0.010941332558310417,
-    n_wq=0.6126015365394264,
-    n_Hq=1076.0113201761642,
-    n_tq=21.44299253425201,
-    n_hs=0.8766793921043287,
-    n_bl=0.6633232013573336,  # B: nursery recruits per animal in a thin herd
-    n_Pl=6.863170769158863,  # B: herd size where recruits per animal halve (nursery full: ~bl*Pl recruits per step)
-    w=0.5,  # weight of the nursery model in the forecast
+    b=0.7353312444239692,  # food-crowded prey births per capita (b and mu act as a pair)
+    mu=0.7110537231768431,  # prey death rate
+    hm_n=0.0804021485918086,  # extra prey deaths at zero habitat protection, north: mu*(1 + hm*(1-hab))
+    hm_s=0.05566892161342491,  # same, south
+    rho_n=0.0033611219746370797,  # food renewal, north
+    rho_s=0.001819651215897948,  # food renewal, south
+    hk_n=0.8136304632311931,  # habitat boost to food renewal, north
+    hk_s=0.8094969107261504,  # habitat boost to food renewal, south
+    cons=0.0005792272052422954,  # food eaten per prey
+    F0=0.8261549577848949,  # food level at reset (fraction of capacity)
+    Pb=17164.890865655245,  # prey crowding of births, per unit food
+    hq=0.17733703907592466,  # harvest per unit quota
+    Ph=7.333343371379826,  # harvest refuge: prey level where harvest halves per capita
+    Hs=7.476249710726517,  # harvest saturation: with Ph ~ Hs, harvest levels off near hq*quota*expo*Hs animals per step
+    sh_n=0.22754018484308458,  # shelter: hunting exposure 1 - sh*hab, north
+    sh_s=0.09616882519491582,  # shelter, south
+    a=0.1752884148493682,  # predator growth at full prey availability
+    Hp=3.0556871163485175e-25,  # prey level for half instant predator growth (fit ~0: no instant effect)
+    m=0.00023821840332573238,  # predator death rate
+    k=0.06846589676764991,  # predator crowding
+    Dk=2.1814444175957335,  # predator level where crowding per predator halves
+    Hv=2.09556997964094e-08,  # prey level where half the predators are counted
+    ep_n=0.031949832875242515,  # prey leaving the north per step at full corridor access
+    ep_s=0.04099578686411413,  # prey leaving the south per step at full corridor access
+    ed_n=0.035056608301469575,  # predators leaving the north per step at full corridor access
+    ed_s=0.035901759987136156,  # predators leaving the south per step at full corridor access
+    tp=24.13283983166949,  # prey transit pool: 1/tp of it settles in the other region per step
+    td=13.803770557040759,  # predator transit pool: 1/td settles per step
+    tmd=0.010941332558310417,  # predators in transit that die per step
+    wq=0.6126015365394264,  # share of predator growth that follows lagged prey availability
+    Hq=1076.0113201761642,  # prey level for half availability (fit at its 500 bound: ~linear in prey below 200)
+    tq=21.44299253425201,  # availability lag (steps)
+    hs=0.8766793921043287,  # south availability scale, Hq*hs: pinned to the rest prey ratio 94.69/121.09 so both regions rest at one predator level (data ~2.34)
+    bl=0.6633232013573336,  # nursery recruits per animal in a thin herd
+    Pl=6.863170769158863,  # herd size where recruits per animal halve (nursery full: ~bl*Pl recruits per step)
 )
 
 
-def _wl_start1(init, p):
+def start_wildlife(init, p):
     pn = _pos(_f(init, "prey_north")); ps = _pos(_f(init, "prey_south"))
     hv = p["Hv"]
     dn = _pos(_f(init, "predator_north")) * (pn + hv) / max(pn, 1e-6)
@@ -898,7 +862,7 @@ def _wl_start1(init, p):
                 wpn=0.0, wps=0.0, wdn=0.0, wds=0.0, qn=pn / (pn + hq), qs=ps / (ps + hq * p["hs"]))
 
 
-def _wl_adv1(s, a, p):
+def adv_wildlife(s, a, p):
     quota = _clip(_f(a, "hunting_quota", 0.0), 0.0, 8.0)
     hab = _clip(_f(a, "habitat_protection", 1.0), 0.0, 1.0)
     cor = _clip(_f(a, "corridor_access", 0.0), 0.0, 1.0)
@@ -939,18 +903,6 @@ def _wl_adv1(s, a, p):
             "prey_south": s["ps"], "predator_south": s["ds"] * s["ps"] / (s["ps"] + hv)}
 
 
-def start_wildlife(init, p):
-    pa = {k: v for k, v in p.items() if not k.startswith("n_") and k != "w"}
-    pb = {k[2:]: v for k, v in p.items() if k.startswith("n_")}
-    return dict(A=_wl_start1(init, pa), B=_wl_start1(init, pb), pa=pa, pb=pb)
-
-
-def adv_wildlife(s, a, p):
-    oa = _wl_adv1(s["A"], a, s["pa"]); ob = _wl_adv1(s["B"], a, s["pb"])
-    w = _clip(p["w"], 0.0, 1.0)
-    return {k: (1.0 - w) * oa[k] + w * ob[k] for k in oa}
-
-
 START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife
 
 
@@ -966,15 +918,24 @@ START["wildlife"], ADVANCE["wildlife"] = start_wildlife, adv_wildlife
 # at H0 on every reset and relaxes toward the level at rate kh. A falling level draws water in (a
 # share ro of it shows in the inflow reading), a rising level loses some. No irrigation return
 # flow (round C: none seen in 90 steps of irrigation 8).
+# Round W (Sep 29): the aquifer head also relaxes toward a fixed regional water table Hr (rate kr),
+# so a reservoir held below it keeps receiving groundwater (round J: +0.3/step for 200 steps at
+# level ~300, which the old bank decayed to 0; refit without round J it still predicts it), a long
+# stay at the spillway leaves the head below the level (a drawdown from full shows no return for
+# its first ~25 steps, as in every pulse), and a rising level cuts the return off within a few
+# steps. All of the return shows in the inflow reading (ro = 1); the level-dependent part of the old
+# loss is now this exchange, so the loss is a constant e0 (e1 = 0) and the steady-state net loss per
+# level is unchanged (-0.08 + 0.0013*level vs -0.03 + 0.0013*level). Water params refit at T.
 # Quality: calm level qc, start-up transient from the first reading, a slow stress
 # memory m driven only by a joint push: u = excess of the mean 0..1 position (recovery -> pulse)
 # over th = 0.25, the most any one control alone can give.
 DEFAULTS["reservoir"] = dict(
-    A=11.310874322656671, B=2.226342827288653, P=67.77337141928736, phi=0.014714559909245226,   # river = A + B*sin(2*pi*t/P + phi)
-    c0=4.5706691948280245, c1=0.39192784092047694,   # delivery cap c0 + c1*sqrt(level)
-    e0=-0.02596946367555613, e1=0.0012628727317216934,   # loss per step e0 + e1*level
+    A=11.281746225643596, B=2.235521921834016, P=67.77337141928736, phi=0.0004911264604715737,   # river = A + B*sin(2*pi*t/P + phi)
+    c0=4.6216093222577594, c1=0.39029107102862254,   # delivery cap c0 + c1*sqrt(level)
+    e0=0.5630063604126777, e1=0.0,   # loss per step e0 + e1*level (evaporation; e1 = 0 since round W)
     Lcap=941.0,   # spillway level (measured, held fixed in the fit)
-    kx=0.005749673427361744, kh=0.0380311391315047, H0=435.6261086443233, ro=0.6455410394599697,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
+    kx=0.007076436106741518, kh=0.03310685000986522, H0=436.81484693642557, ro=1.0,   # bank storage: exchange rate, head relaxation, start head, share seen in inflow
+    kr=0.007311413757059329, Hr=503.81940168512006,   # regional water table: pull on the aquifer head, its level
     qc=0.9596712525080192, qa=0.09123982053881292, tq=4.660674394054027,   # calm quality, memory weight, start-up time constant
     g0=0.0013703030433965336, g=0.0035950058192401185, d=0.006089635459834917, th=0.25,   # memory: calm drive, stress drive, decay, drive shape
 )
@@ -990,7 +951,7 @@ def adv_reservoir(s, a, p):
     s["t"] += 1; t = s["t"]; L = s["level"]
     river = p["A"] + p["B"] * math.sin(2 * math.pi * t / p["P"] + p["phi"])
     G = p["kx"] * (s["H"] - L)
-    s["H"] += p["kh"] * (L - s["H"])
+    s["H"] += p["kh"] * (L - s["H"]) + p["kr"] * (p["Hr"] - s["H"])
     inflow = river + (p["ro"] * G if G > 0 else 0.0)
     wet = river + G
     loss = p["e0"] + p["e1"] * L
