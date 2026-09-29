@@ -539,6 +539,17 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   bid 5 alone at budget 20 lifts conversions ~25% within ~5 steps, fades back by ~60 steps, then dips
   to 2.16 for ~40 steps after the return (conversions / win rate 11.4 -> 9.2 -> 12.2, a stock being
   drawn down and refilled); after every reset conversions rise linearly at 0.21/step from step 2.
+- Power round W (scratch `W2/power_grid/`): load self-regulation. The load error of C correlates
+  +0.56 with the frequency deviation (reserve-alone hold at +1.8 Hz: data 3.4 above C; interconnector
+  0.2 at -0.5 Hz: 1.8 below; price-0 holds near -1.5 Hz: 2.5 below): motor-driven demand rises with
+  frequency (~4% per Hz on the cooling loads, as power ~ f^2 predicts). L: load x (1 + dl x previous
+  frequency deviation), dl 0.0202, in the reading and in the frequency balance; all params refit at
+  T. Every log up (all T 0.882 -> 0.892; load T 0.885 -> 0.917); fair CV at T beats C on every
+  held-out log (mean 0.858 -> 0.873); agreement 0.976; gate ~20 s. LE = L plus renewables curtailed
+  by exp(-cq x reserve) instead of C's straight line (the three capped reserve holds fit one
+  exponential rate 0.013): all T 0.895, but fair CV misses base by 0.0015 (mean 0.882); at partial
+  reserve it curtails more than C (untested). Probes: `uploads/2026-09-29_W_power_l.zip` and
+  `uploads/2026-09-29_W_power_le.zip` (separate uploads; keep the better if > 0.8418).
 
 ## Next steps
 
