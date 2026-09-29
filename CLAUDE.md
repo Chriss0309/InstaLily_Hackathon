@@ -531,6 +531,14 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   <= 0.9%); peaks come 26-27 steps after 30-step pulses (models 33-37). With food eaten in proportion
   to herd x food, food eaten while regrowing cancels food stored during the crash, so no setting
   reaches the 200 peak (five variants all stall near 155/134 after the 100-step pulse).
+- Ad round W (scratch `W2/ad_auction/`): nothing passed; C1 (rival capital as competing campaigns
+  in the win curve, rivals also compete for attention) gains +0.0025 T in-sample on every log but
+  loses held-out f1 under every CV protocol; not packaged. Removing exposure fatigue costs -0.07 and
+  removing rival movement -0.012 at T, so fatigue and the rival capital pool look like the two active
+  history mechanisms (broad introduction's effect is what round V's A added on top). Unexplained:
+  bid 5 alone at budget 20 lifts conversions ~25% within ~5 steps, fades back by ~60 steps, then dips
+  to 2.16 for ~40 steps after the return (conversions / win rate 11.4 -> 9.2 -> 12.2, a stock being
+  drawn down and refilled); after every reset conversions rise linearly at 0.21/step from step 2.
 
 ## Next steps
 
