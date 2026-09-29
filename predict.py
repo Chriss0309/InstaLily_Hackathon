@@ -1031,6 +1031,11 @@ START["reservoir"], ADVANCE["reservoir"] = start_reservoir, adv_reservoir
 # W1 is held flat beyond 0.775 (no run targets that far). Hidden state starts at the
 # fixed reset convention (full reach, empty pipeline, uniform rivals); the initial
 # reading is ignored.
+# Round V: follow-up converts attention less well while targeting reaches past the core
+# (x > 0.55): its effect falls as exp(-gb * (breadth - 0.55) / 0.225), 0.45x at 0.775, flat
+# below 0.55. Broad phases build attention that later narrow follow-up harvests (data: after
+# breadth 0.775 -> 0.55 at fixed budget, conversions rise ~0.3-0.4 for ~10 steps, rounds C and F).
+# Win/spend params are the round Q values; conversion params refit at T with gb.
 AD_EDGES = [0.0, 0.55, 0.775, 1.0]
 AD_D = [AD_EDGES[i + 1] - AD_EDGES[i] for i in range(len(AD_EDGES) - 1)]
 DEFAULTS["ad_auction"] = dict(
@@ -1042,20 +1047,21 @@ DEFAULTS["ad_auction"] = dict(
     kap=0.9617868001401669,     # pacing: win_rate x pace**kap (kap<1: bid shading, not pure throttling)
     f=0.12598873267866617,      # reach lost per step per unit exposure
     tauR=101.26596170787253,     # reach recovery time (steps)
-    a=1.3786539345315605,       # attention gained per unit impressions (x100)
-    k1=0.030105411198300708,     # follow-up: purchase starts per attention at exposure xr
-    k0=0.16021319116194596,     # spontaneous purchase starts per attention
+    a=1.3859724109805882,       # attention gained per unit impressions (x100)
+    k1=0.09190739824432366,     # follow-up: purchase starts per attention at exposure xr
+    k0=0.16052232565471014,     # spontaneous purchase starts per attention
     xr=0.26,                    # reference exposure for k1 (fixed)
-    k2=0.10240168856061384,      # pending -> completed rate
-    F=10.784378455288287,       # fulfilment capacity (core purchases per step)
-    W1=9.075642341163254,       # fulfilment work per purchase outside the core audience (core = 1)
-    v=0.001443126418027051,    # converted customers made unavailable per conversion (per unit breadth)
-    tauV=21.0133253310607,     # time for converted customers to return (steps)
-    cq=3.179332372045706,         # conversion propensity falls as exp(-cq*x) across the audience
+    k2=0.09043194824549503,      # pending -> completed rate
+    F=10.2378850673429,       # fulfilment capacity (core purchases per step)
+    W1=8.108212137830666,       # fulfilment work per purchase outside the core audience (core = 1)
+    v=0.0013016025720974436,    # converted customers made unavailable per conversion (per unit breadth)
+    tauV=23.35933219403012,     # time for converted customers to return (steps)
+    cq=3.1787178847027033,         # conversion propensity falls as exp(-cq*x) across the audience
     phi=9.134644098808765e-14,    # price rises with local rival pressure K**phi
     rho=0.2697502745728825,    # rival capital pulled toward where we bid (conserved pool)
     tauK=23.936973288574897,    # rival capital relocation time (steps)
     mu=0.5841516336943764,      # rival capital pulled toward reachable people
+    gb=0.8055006803266307,           # follow-up effect falls as exp(-gb*(breadth-0.55)/0.225) past the core
 )
 
 
@@ -1110,6 +1116,7 @@ def adv_ad(s, a, p):
     conv = 0.0
     bf = b * pace ** (1.0 - kap) / 1.5
     mu = p["mu"]; rho = p["rho"]
+    fb = math.exp(-p["gb"] * _pos(w - 0.55) / 0.225)
     tg = [((av[i] ** mu if mu > 0 else 1.0) * (1.0 + rho * (u[i] * bf))) for i in range(nb)]
     nrm = 0.0
     for i in range(nb):
@@ -1118,7 +1125,7 @@ def adv_ad(s, a, p):
         x = u[i] * Wu[i] * wf
         ci = k2 * Q[i] * sF
         conv += ci
-        st = A[i] * (k0 + k1 * x / xr)
+        st = A[i] * (k0 + k1 * x / xr * fb)
         Q[i] += st - ci
         A[i] += aa * 100.0 * vol[i] * Wu[i] * wf * qx[i] - st
         R[i] = _clip(R[i] - f * x * av[i] * R[i] + (1.0 - R[i]) / tauR, 0.0, 1.0)

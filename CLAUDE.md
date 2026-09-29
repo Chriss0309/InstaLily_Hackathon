@@ -490,6 +490,24 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   the effect of later follow-up"). Only conversion params + gb refit at T, win/spend params kept. All
   T +0.0041 (f1 +0.019, j1 -0.006); CV with win/spend held wins every fold by +0.003-0.004, all-free
   CV loses f1; agreement 0.987 (settle levels unchanged). Expected ~+0.002.
+- Uploads V (public, Tue Sep 29 Toronto, just after midnight) scored: ad A 0.8883 (Q 0.8866,
+  +0.0017, as predicted), supply C 0.8121 (0.8120, tie), traffic JT 0.8373 (B2 0.8377, tie),
+  epidemic V_BPsha 0.7205 (A_full 0.7492, -0.0287). Ad A is spliced into the repo; supply, traffic
+  and epidemic stay (two-intake, B2, A_full). Epidemic lesson: both refits that moved the hospital
+  params (round R and V_BPsha) lost ~0.03 while improving every log, so the hidden hospital
+  dynamics differ from our logs. Best public: ad 0.8883, epidemic 0.7492, hospital 0.7333, market
+  0.6761, power 0.8418, reservoir 0.8613, social 0.5778, supply 0.8121, traffic 0.8377, wildlife
+  0.7909; mean 0.7769. `uploads/2026-09-29_final_candidate_v10.zip` = v9_ens50 plus ad A (the repo
+  builds it; compare_zips: ad identical to V_ad_a, the other nine to v9_ens50). Default final.
+- Blend probes W (Tue Sep 29): for systems where two structurally different versions tie publicly,
+  the average of the two can beat both if their errors often have opposite signs (wildlife ens50
+  +0.016). Built with scratch `build_blend.py` (N/ensemble.py folders: predict.py loads v_<name>.py
+  + v_<name>.json members relative to __file__ and returns their per-step mean; smoke test + gate
+  x2): `uploads/2026-09-29_W_traffic_blend.zip` (B2 + JT, all T +0.011, every log >= +0.002; keep if
+  > 0.8377), `uploads/2026-09-29_W_supply_blend.zip` (two-intake + C, all T +0.009, worst log
+  -0.010; keep if > 0.8121), `uploads/2026-09-29_W_social_blend.zip` (C + Q2, all T +0.034, worst
+  -0.005; keep if > 0.5778). The nursery re-test is `uploads/2026-09-28_U_wildlife_nursery.zip`
+  (keep if > 0.7909).
 
 ## Next steps
 
