@@ -585,6 +585,21 @@ python score_zip.py uploads\A.zip uploads\B.zip [SYSTEM ...]   # free: compare v
   through B2, JT and blend public scores peaks at weight ~0.52; unmodeled: speed_b at the full pulse
   (models 12-13.6 vs data 16.5), after a signal reversal route a drains ~957 vehicles and speed_a
   stays ~9 for ~25 steps, light-load tails exit 15-16 steps after ramp-off (models 11).
+  Wildlife (two probes; keep the better if > 0.7984): `uploads/2026-09-29_X_wildlife_xbs.zip` =
+  nursery + an outer patch (brief: patches) the herd spreads into past ~50 animals (occupancy
+  P^3/(P^3 + 50^3)), whose food regrows ~8.5%/step while unused and adds up to 0.108 births per
+  animal, so it refills during any stress that keeps the herd below ~40; predator growth x (1 +
+  0.049 x (1 - habitat)) (round C: predators stayed flat at 2.34 while prey fell 121 -> 66 under
+  habitat 0.1); south reset food 0.68 (north 1.0). All params refit at T: all T 0.804 -> 0.819 (f1
+  +0.029, c1 +0.017, h1 -0.005); fair CV beats nursery on every held-out log (mean 0.754 -> 0.777;
+  70% hold from the other logs 22.2/19.2 vs nursery 25.7/21.3, data 19.6/18.1); agreement 0.941.
+  Risk: a north cliff under quota alone between 6.20 and 6.25 (48.3 -> 28.3; nursery 38.7 at 6.25),
+  inside the recovery category's quota range 4.9-7; the refit removed the low-prey harvest refuge.
+  `uploads/2026-09-29_X_wildlife_xpp.zip` = nursery with only the predation-follows-shelter term
+  (prey byte-identical to nursery; predator params refit): all T +0.005, CV (prey pinned) +0.005,
+  agreement 0.975. Still unmodeled: the overshoot height after long crashes (data 200/167 after the
+  100-step pulse; every variant ~145/124) and the corridor-alone phase (data flat 110/76, then a slow
+  rise to 139 over 57 steps after the corridor closes).
 
 ## Next steps
 
